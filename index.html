@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>প্রম্পট বাড়ি - এআই প্রম্পট মার্কেটপ্লেস</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Hind Siliguri', sans-serif; }
+        body { background-color: #f8fafc; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Header */
+        header { background-color: #4f46e5; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .menu-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; }
+        
+        /* Sidebar Drawer */
+        #mobileSidebar { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; }
+        #sidebarContent { width: 280px; height: 100%; background: white; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; }
+        .close-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #64748b; }
+        .sidebar-links a, .sidebar-links button { display: block; width: 100%; padding: 12px; text-decoration: none; color: #334155; font-weight: 600; margin-bottom: 8px; border-radius: 8px; background: #f1f5f9; border: none; text-align: left; cursor: pointer; }
+        .sidebar-links a:hover, .sidebar-links button:hover { background: #e0e7ff; color: #4f46e5; }
+
+        /* Banner */
+        .banner { background-color: #4338ca; color: white; padding: 30px 20px; text-align: center; }
+        .search-box input { width: 100%; max-width: 500px; padding: 12px 20px; border-radius: 30px; border: none; font-size: 16px; outline: none; margin-top: 15px; }
+
+        /* Main Content Grid */
+        main { max-width: 1200px; margin: 30px auto; padding: 0 20px; flex-grow: 1; width: 100%; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .prompt-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: space-between; }
+        .category-tag { background: #e0e7ff; color: #4338ca; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
+        .title-text { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #0f172a; }
+        .prompt-text { background: #f8fafc; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; color: #475569; margin-bottom: 15px; word-break: break-all; }
+        
+        /* Buttons */
+        .btn-copy { background: #e0e7ff; color: #4338ca; border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 8px; transition: 0.2s; }
+        .btn-copy:hover { background: #c7d2fe; }
+        .btn-ai { background: #059669; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
+        .btn-ai:hover { background: #047857; }
+
+        /* Footer */
+        footer { background: #1e293b; color: white; text-align: center; padding: 20px; margin-top: 40px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+            <h1>🚀 প্রম্পট বাড়ি</h1>
+        </div>
+    </header>
+
+    <div id="mobileSidebar" onclick="toggleSidebar(event)">
+        <div id="sidebarContent" onclick="event.stopPropagation()">
+            <div>
+                <div class="sidebar-header">
+                    <h2>সেটিংস ও মেনু</h2>
+                    <button class="close-btn" onclick="toggleSidebar()">✕</button>
+                </div>
+                <div class="sidebar-links">
+                    <a href="#" onclick="toggleSidebar()">🏠 হোমপেজ</a>
+                    <a href="#" onclick="toggleSidebar()">📋 সকল প্রম্পট</a>
+                    <button onclick="alert('প্রম্পট যোগ করার ফিচারটি সচল আছে!')">➕ প্রম্পট যোগ করুন</button>
+                </div>
+            </div>
+            <div style="font-size: 12px; color: #94a3b8; text-align: center;">© ২০২৬ প্রম্পট বাড়ি</div>
+        </div>
+    </div>
+
+    <section class="banner">
+        <h2>আপনার পছন্দের এআই প্রম্পট খুঁজুন</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" onkeyup="searchPrompts()" placeholder="কী ধরনের প্রম্পট খুঁজছেন?">
+        </div>
+    </section>
+
+    <main>
+        <div class="grid" id="promptGrid">
+            <div class="prompt-card">
+                <div>
+                    <span class="category-tag">কন্টেন্ট রাইটিং</span>
+                    <h3 class="title-text">আকর্ষণীয় ফেসবুক ক্যাপশন জেনারেটর</h3>
+                    <p class="prompt-text">Act as a professional copywriter. Write a catchy Facebook caption for my new clothing brand...</p>
+                </div>
+                <div>
+                    <button class="btn-copy" onclick="copyText(this)">📋 প্রম্পট কপি করুন</button>
+                    <button class="btn-ai" onclick="runAI(this)">🤖 এআই দিয়ে রান করুন</button>
+                </div>
+            </div>
+
+            <div class="prompt-card">
+                <div>
+                    <span class="category-tag">প্রোগ্রামিং</span>
+                    <h3 class="title-text">কোড ডিবাগিং ও সমাধান</h3>
+                    <p class="prompt-text">Find bugs in this code and explain how to fix them simply: [কোড এখানে দিন]</p>
+                </div>
+                <div>
+                    <button class="btn-copy" onclick="copyText(this)">📋 প্রম্পট কপি করুন</button>
+                    <button class="btn-ai" onclick="runAI(this)">🤖 এআই দিয়ে রান করুন</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© ২০২৬ প্রম্পট বাড়ি। সর্বস্বত্ব সংরক্ষিত।</p>
+    </footer>
+
+    <script>
+        // মেনুবার ওপেন/ক্লোজ করার নিখুঁত ফাংশন
+        function toggleSidebar(event) {
+            const sidebar = document.getElementById('mobileSidebar');
+            if (!event || event.target === sidebar || event.target.classList.contains('menu-btn') || event.target.classList.contains('close-btn') || event.target.tagName === 'A') {
+                sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+
+        // গ্যারান্টিড টেক্সট কপি ফাংশন (ফলব্যাক সহ)
+        function copyText(button) {
+            const card = button.closest('.prompt-card');
+            const text = card.querySelector('.prompt-text').innerText;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    successFeedback(button);
+                }).catch(() => {
+                    fallbackCopy(text, button);
+                });
+            } else {
+                fallbackCopy(text, button);
+            }
+        }
+
+        function fallbackCopy(text, button) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                successFeedback(button);
+            } catch (err) {
+                alert('কপি করা সম্ভব হয়নি!');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function successFeedback(button) {
+            const originalText = button.innerText;
+            button.innerText = '✅ সফলভাবে কপি হয়েছে!';
+            button.style.background = '#d1fae5';
+            button.style.color = '#065f46';
+            setTimeout(() => {
+                button.innerText = originalText;
+                button.style.background = '#e0e7ff';
+                button.style.color = '#4338ca';
+            }, 2000);
+        }
+
+        function runAI(button) {
+            const title = button.closest('.prompt-card').querySelector('.title-text').innerText;
+            alert(`"${title}" প্রম্পট নিয়ে এআই ব্যাকএন্ড প্রসেসিং শুরু হচ্ছে...`);
+        }
+
+        function searchPrompts() {
+            let filter = document.getElementById('searchInput').value.toLowerCase();
+            let cards = document.getElementsByClassName('prompt-card');
+            for (let i = 0; i < cards.length; i++) {
+                let title = cards[i].querySelector('.title-text').innerText.toLowerCase();
+                let text = cards[i].querySelector('.prompt-text').innerText.toLowerCase();
+                if (title.includes(filter) || text.includes(filter)) {
+                    cards[i].style.display = "flex";
+                } else {
+                    cards[i].style.display = "none";
+                }
+            }
+        }
+    </script>
+</body>
+      </html>
+      
