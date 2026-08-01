@@ -4,182 +4,236 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>প্রম্পট বাড়ি - এআই প্রম্পট মার্কেটপ্লেস</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Hind Siliguri', sans-serif; }
-        body { background-color: #f8fafc; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
-        
-        /* Header */
-        header { background-color: #4f46e5; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .menu-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; }
-        
-        /* Sidebar Drawer */
-        #mobileSidebar { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; }
-        #sidebarContent { width: 280px; height: 100%; background: white; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
-        .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; }
-        .close-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #64748b; }
-        .sidebar-links a, .sidebar-links button { display: block; width: 100%; padding: 12px; text-decoration: none; color: #334155; font-weight: 600; margin-bottom: 8px; border-radius: 8px; background: #f1f5f9; border: none; text-align: left; cursor: pointer; }
-        .sidebar-links a:hover, .sidebar-links button:hover { background: #e0e7ff; color: #4f46e5; }
-
-        /* Banner */
-        .banner { background-color: #4338ca; color: white; padding: 30px 20px; text-align: center; }
-        .search-box input { width: 100%; max-width: 500px; padding: 12px 20px; border-radius: 30px; border: none; font-size: 16px; outline: none; margin-top: 15px; }
-
-        /* Main Content Grid */
-        main { max-width: 1200px; margin: 30px auto; padding: 0 20px; flex-grow: 1; width: 100%; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .prompt-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: space-between; }
-        .category-tag { background: #e0e7ff; color: #4338ca; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
-        .title-text { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #0f172a; }
-        .prompt-text { background: #f8fafc; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; color: #475569; margin-bottom: 15px; word-break: break-all; }
-        
-        /* Buttons */
-        .btn-copy { background: #e0e7ff; color: #4338ca; border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 8px; transition: 0.2s; }
-        .btn-copy:hover { background: #c7d2fe; }
-        .btn-ai { background: #059669; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
-        .btn-ai:hover { background: #047857; }
-
-        /* Footer */
-        footer { background: #1e293b; color: white; text-align: center; padding: 20px; margin-top: 40px; font-size: 14px; }
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+        }
+        /* ব্যাকগ্রাউন্ড ব্লার ইফেক্ট ও স্মুথ ড্রয়ার স্লাইড */
+        #mobileSidebar {
+            transition: opacity 0.3s ease;
+        }
+        #sidebarContent {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+        #mobileSidebar:not(.hidden) #sidebarContent {
+            transform: translateX(0);
+        }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <header>
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-            <h1>🚀 প্রম্পট বাড়ি</h1>
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="toggleSidebar()" class="text-white focus:outline-none p-2 rounded-lg hover:bg-indigo-700 transition cursor-pointer z-50">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                <h1 class="text-xl md:text-2xl font-bold">🚀 প্রম্পট বাড়ি</h1>
+            </div>
+            <nav class="hidden md:flex space-x-6 items-center">
+                <a href="#" class="hover:text-indigo-200 transition">হোম</a>
+                <a href="#promptGrid" class="hover:text-indigo-200 transition">প্রম্পটসমূহ</a>
+                <button type="button" onclick="openAddModal()" class="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-1.5 px-4 rounded-lg transition text-sm shadow cursor-pointer">
+                    ➕ প্রম্পট যোগ করুন
+                </button>
+            </nav>
         </div>
     </header>
 
-    <div id="mobileSidebar" onclick="toggleSidebar(event)">
-        <div id="sidebarContent" onclick="event.stopPropagation()">
+    <div id="mobileSidebar" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex">
+        <div id="sidebarContent" class="bg-white w-72 h-full shadow-2xl p-5 flex flex-col justify-between">
             <div>
-                <div class="sidebar-header">
-                    <h2>সেটিংস ও মেনু</h2>
-                    <button class="close-btn" onclick="toggleSidebar()">✕</button>
+                <div class="flex justify-between items-center mb-6 border-b pb-3">
+                    <h2 class="text-xl font-bold text-indigo-600">⚙️ সেটিংস ও মেনু</h2>
+                    <button type="button" onclick="toggleSidebar()" class="text-slate-400 hover:text-slate-700 font-bold text-2xl p-1 cursor-pointer">✕</button>
                 </div>
-                <div class="sidebar-links">
-                    <a href="#" onclick="toggleSidebar()">🏠 হোমপেজ</a>
-                    <a href="#" onclick="toggleSidebar()">📋 সকল প্রম্পট</a>
-                    <button onclick="alert('প্রম্পট যোগ করার ফিচারটি সচল আছে!')">➕ প্রম্পট যোগ করুন</button>
+                <div class="flex flex-col space-y-3">
+                    <a href="#" onclick="toggleSidebar()" class="text-slate-700 hover:text-indigo-600 hover:bg-slate-50 p-3 rounded-lg font-semibold flex items-center gap-3 transition">🏠 হোমপেজ</a>
+                    <a href="#promptGrid" onclick="toggleSidebar()" class="text-slate-700 hover:text-indigo-600 hover:bg-slate-50 p-3 rounded-lg font-semibold flex items-center gap-3 transition">📋 সকল প্রম্পটসমূহ</a>
+                    
+                    <button type="button" onclick="handleSidebarAddClick()" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold p-3 rounded-lg flex items-center gap-3 transition text-left shadow-sm cursor-pointer">
+                        ➕ প্রম্পট যোগ করুন
+                    </button>
                 </div>
             </div>
-            <div style="font-size: 12px; color: #94a3b8; text-align: center;">© ২০২৬ প্রম্পট বাড়ি</div>
+            <div class="text-xs text-slate-400 text-center border-t pt-4">
+                © ২০২৬ প্রম্পট বাড়ি। সর্বস্বত্ব সংরক্ষিত।
+            </div>
         </div>
+        <div class="flex-grow" onclick="toggleSidebar()"></div>
     </div>
 
-    <section class="banner">
-        <h2>আপনার পছন্দের এআই প্রম্পট খুঁজুন</h2>
-        <div class="search-box">
-            <input type="text" id="searchInput" onkeyup="searchPrompts()" placeholder="কী ধরনের প্রম্পট খুঁজছেন?">
+    <section class="bg-indigo-700 text-white py-8 px-4 text-center">
+        <div class="max-w-3xl mx-auto">
+            <h2 class="text-2xl md:text-3xl font-bold mb-4">আপনার পছন্দের এআই প্রম্পট খুঁজুন</h2>
+            <div class="relative max-w-xl mx-auto">
+                <input type="text" id="searchInput" onkeyup="searchPrompts()" placeholder="কী ধরনের প্রম্পট খুঁজছেন? (যেমন: ভিডিও, কোডিং, ফেসবুক...)" 
+                    class="w-full py-3 px-5 rounded-full text-slate-800 focus:outline-none shadow-lg text-sm bg-white">
+            </div>
         </div>
     </section>
 
-    <main>
-        <div class="grid" id="promptGrid">
-            <div class="prompt-card">
+    <main class="max-w-6xl mx-auto px-4 py-10 flex-grow w-full">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-slate-700">জনপ্রিয় প্রম্পটসমূহ</h3>
+        </div>
+        
+        <div id="promptGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <div class="prompt-card bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
                 <div>
-                    <span class="category-tag">কন্টেন্ট রাইটিং</span>
-                    <h3 class="title-text">আকর্ষণীয় ফেসবুক ক্যাপশন জেনারেটর</h3>
-                    <p class="prompt-text">Act as a professional copywriter. Write a catchy Facebook caption for my new clothing brand...</p>
+                    <span class="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full category-tag">কন্টেন্ট রাইটিং</span>
+                    <h4 class="text-xl font-bold mt-3 mb-2 text-slate-800 title-text">আকর্ষণীয় ফেসবুক ক্যাপশন জেনারেটর</h4>
+                    <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg mb-4 font-mono prompt-text">Act as a professional copywriter. Write a catchy Facebook caption for my new clothing brand...</p>
                 </div>
-                <div>
-                    <button class="btn-copy" onclick="copyText(this)">📋 প্রম্পট কপি করুন</button>
-                    <button class="btn-ai" onclick="runAI(this)">🤖 এআই দিয়ে রান করুন</button>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="copyPrompt(this)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer">📋 প্রম্পট কপি করুন</button>
+                    <button type="button" onclick="runWithMyAI(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm">🤖 আমার এআই (Gemini/4o) দিয়ে রান করুন</button>
                 </div>
             </div>
 
-            <div class="prompt-card">
+            <div class="prompt-card bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
                 <div>
-                    <span class="category-tag">প্রোগ্রামিং</span>
-                    <h3 class="title-text">কোড ডিবাগিং ও সমাধান</h3>
-                    <p class="prompt-text">Find bugs in this code and explain how to fix them simply: [কোড এখানে দিন]</p>
+                    <span class="bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full category-tag">প্রোগ্রামিং</span>
+                    <h4 class="text-xl font-bold mt-3 mb-2 text-slate-800 title-text">কোড ডিবাগিং ও সমাধান</h4>
+                    <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg mb-4 font-mono prompt-text">Find bugs in this code and explain how to fix them simply: [কোড এখানে দিন]</p>
                 </div>
-                <div>
-                    <button class="btn-copy" onclick="copyText(this)">📋 প্রম্পট কপি করুন</button>
-                    <button class="btn-ai" onclick="runAI(this)">🤖 এআই দিয়ে রান করুন</button>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="copyPrompt(this)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer">📋 প্রম্পট কপি করুন</button>
+                    <button type="button" onclick="runWithMyAI(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm">🤖 আমার এআই (Gemini/4o) দিয়ে রান করুন</button>
                 </div>
             </div>
+
+            <div class="prompt-card bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <span class="bg-orange-100 text-orange-700 text-xs font-semibold px-2.5 py-1 rounded-full category-tag">পড়াশোনা</span>
+                    <h4 class="text-xl font-bold mt-3 mb-2 text-slate-800 title-text">সহজে কঠিন বিষয় বোঝা</h4>
+                    <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg mb-4 font-mono prompt-text">Explain quantum physics like I am a 10-year-old child with simple examples.</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="copyPrompt(this)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer">📋 প্রম্পট কপি করুন</button>
+                    <button type="button" onclick="runWithMyAI(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm">🤖 আমার এআই (Gemini/4o) দিয়ে রান করুন</button>
+                </div>
+            </div>
+
+            <div class="prompt-card bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <span class="bg-purple-100 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-full category-tag">ভিডিও মেকিং</span>
+                    <h4 class="text-xl font-bold mt-3 mb-2 text-slate-800 title-text">সিনেমাটিক ভিডিও স্ক্রিপ্ট</h4>
+                    <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg mb-4 font-mono prompt-text">Create a 30-second cinematic video script about a futuristic Dhaka city with drone shot descriptions.</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="copyPrompt(this)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer">📋 প্রম্পট কপি করুন</button>
+                    <button type="button" onclick="runWithMyAI(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm">🤖 আমার এআই (Gemini/4o) দিয়ে রান করুন</button>
+                </div>
+            </div>
+
+            <div class="prompt-card bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <span class="bg-pink-100 text-pink-700 text-xs font-semibold px-2.5 py-1 rounded-full category-tag">ইমেজ জেনারেশন</span>
+                    <h4 class="text-xl font-bold mt-3 mb-2 text-slate-800 title-text">মিডজার্নি বা এআই ইমেজ প্রম্পট</h4>
+                    <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg mb-4 font-mono prompt-text">A hyper-realistic portrait of a traditional Bangladeshi rickshaw puller in neon cyberpunk style, 8k resolution.</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="copyPrompt(this)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer">📋 প্রম্পট কপি করুন</button>
+                    <button type="button" onclick="runWithMyAI(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm">🤖 আমার এআই (Gemini/4o) দিয়ে রান করুন</button>
+                </div>
+            </div>
+
+            <div class="prompt-card bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full category-tag">মার্কেটিং</span>
+                    <h4 class="text-xl font-bold mt-3 mb-2 text-slate-800 title-text">ইমেইল সেলস পিচ তৈরি</h4>
+                    <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg mb-4 font-mono prompt-text">Write a persuasive B2B cold sales email to a local business owner offering web development services.</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="copyPrompt(this)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer">📋 প্রম্পট কপি করুন</button>
+                    <button type="button" onclick="runWithMyAI(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm">🤖 আমার এআই (Gemini/4o) দিয়ে রান করুন</button>
+                </div>
+            </div>
+
+            <div class="prompt-card bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <span class="bg-teal-100 text-teal-700 text-xs font-semibold px-2.5 py-1 rounded-full category-tag">ব্লগিং</span>
+                    <h4 class="text-xl font-bold mt-3 mb-2 text-slate-800 title-text">এসইও ফ্রেন্ডলি ব্লগ আউটলাইন</h4>
+                    <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg mb-4 font-mono prompt-text">Create a complete SEO-optimized blog post outline on "How to start freelance digital marketing in 2026".</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="copyPrompt(this)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer">📋 প্রম্পট কপি করুন</button>
+                    <button type="button" onclick="runWithMyAI(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm">🤖 আমার এআই (Gemini/4o) দিয়ে রান করুন</button>
+                </div>
+            </div>
+
+            <div class="prompt-card bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-1 rounded-full category-tag">ক্যারিয়ার</span>
+                    <h4 class="text-xl font-bold mt-3 mb-2 text-slate-800 title-text">প্রফেশনাল সিভি বা বায়োডাটা</h4>
+                    <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg mb-4 font-mono prompt-text">Act as a HR manager. Write a professional resume summary for a software developer with 2 years experience.</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="copyPrompt(this)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer">📋 প্রম্পট কপি করুন</button>
+                    <button type="button" onclick="runWithMyAI(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm">🤖 আমার এআই (Gemini/4o) দিয়ে রান করুন</button>
+                </div>
+            </div>
+
+            <div class="prompt-card bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <span class="bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-1 rounded-full category-tag">ভাষা ও অনুবাদ</span>
+                    <h4 class="text-xl font-bold mt-3 mb-2 text-slate-800 title-text">ইংরেজি থেকে সঠিক বাংলা অনুবাদ</h4>
+                    <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg mb-4 font-mono prompt-text">Translate this English text into fluent, natural Bengali keeping professional tone: [টেক্সট এখানে দিন]</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="copyPrompt(this)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer">📋 প্রম্পট কপি করুন</button>
+                    <button type="button" onclick="runWithMyAI(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm">🤖 আমার এআই (Gemini/4o) দিয়ে রান করুন</button>
+                </div>
+            </div>
+
+            <div class="prompt-card bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <span class="bg-cyan-100 text-cyan-700 text-xs font-semibold px-2.5 py-1 rounded-full category-tag">আইডিয়া জেনারেটর</span>
+                    <h4 class="text-xl font-bold mt-3 mb-2 text-slate-800 title-text">ইউটিউব ভিডিও আইডিয়া</h4>
+                    <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg mb-4 font-mono prompt-text">Give me 5 viral YouTube video ideas for a tech channel based in Bangladesh with high click-through potential.</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button type="button" onclick="copyPrompt(this)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer">📋 প্রম্পট কপি করুন</button>
+                    <button type="button" onclick="runWithMyAI(this)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm">🤖 আমার এআই (Gemini/4o) দিয়ে রান করুন</button>
+                </div>
+            </div>
+
         </div>
     </main>
 
-    <footer>
-        <p>© ২০২৬ প্রম্পট বাড়ি। সর্বস্বত্ব সংরক্ষিত।</p>
-    </footer>
-
-    <script>
-        // মেনুবার ওপেন/ক্লোজ করার নিখুঁত ফাংশন
-        function toggleSidebar(event) {
-            const sidebar = document.getElementById('mobileSidebar');
-            if (!event || event.target === sidebar || event.target.classList.contains('menu-btn') || event.target.classList.contains('close-btn') || event.target.tagName === 'A') {
-                sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
-            }
-        }
-
-        // গ্যারান্টিড টেক্সট কপি ফাংশন (ফলব্যাক সহ)
-        function copyText(button) {
-            const card = button.closest('.prompt-card');
-            const text = card.querySelector('.prompt-text').innerText;
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
-                    successFeedback(button);
-                }).catch(() => {
-                    fallbackCopy(text, button);
-                });
-            } else {
-                fallbackCopy(text, button);
-            }
-        }
-
-        function fallbackCopy(text, button) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            document.body.appendChild(textarea);
-            textarea.focus();
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                successFeedback(button);
-            } catch (err) {
-                alert('কপি করা সম্ভব হয়নি!');
-            }
-            document.body.removeChild(textarea);
-        }
-
-        function successFeedback(button) {
-            const originalText = button.innerText;
-            button.innerText = '✅ সফলভাবে কপি হয়েছে!';
-            button.style.background = '#d1fae5';
-            button.style.color = '#065f46';
-            setTimeout(() => {
-                button.innerText = originalText;
-                button.style.background = '#e0e7ff';
-                button.style.color = '#4338ca';
-            }, 2000);
-        }
-
-        function runAI(button) {
-            const title = button.closest('.prompt-card').querySelector('.title-text').innerText;
-            alert(`"${title}" প্রম্পট নিয়ে এআই ব্যাকএন্ড প্রসেসিং শুরু হচ্ছে...`);
-        }
-
-        function searchPrompts() {
-            let filter = document.getElementById('searchInput').value.toLowerCase();
-            let cards = document.getElementsByClassName('prompt-card');
-            for (let i = 0; i < cards.length; i++) {
-                let title = cards[i].querySelector('.title-text').innerText.toLowerCase();
-                let text = cards[i].querySelector('.prompt-text').innerText.toLowerCase();
-                if (title.includes(filter) || text.includes(filter)) {
-                    cards[i].style.display = "flex";
-                } else {
-                    cards[i].style.display = "none";
-                }
-            }
-        }
-    </script>
-</body>
-      </html>
-      
+    <div id="addPromptModal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full relative">
+            <button type="button" onclick="closeAddModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl font-bold p-1 cursor-pointer">✕</button>
+            
+            <h3 class="text-2xl font-bold mb-2 text-indigo-600 text-center">✨ নতুন প্রম্পট যোগ করুন</h3>
+            <p class="text-slate-500 text-sm text-center mb-6">আপনার সেরা প্রম্পটটি যুক্ত করুন যা হোমপেজে সবার উপরে দেখাবে।</p>
+            
+            <form onsubmit="addNewPrompt(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">ক্যাটাগরি (যেমন: ভিডিও, কোডিং, মার্কেটিং)</label>
+                    <input type="text" id="newCategory" required placeholder="ক্যাটাগরির নাম লিখুন" 
+                        class="w-full py-2.5 px-4 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">প্রম্পটের শিরোনাম</label>
+                    <input type="text" id="newTitle" required placeholder="যেমন: ইউটিউব ভিডিও স্ক্রিপ্ট লেখার প্রম্পট" 
+                        class="w-full py-2.5 px-4 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">প্রম্পটের মূল টেক্সট</label>
+                    <textarea id="newText" rows="3" required placeholder="এখানে আপনার প্রম্পটটি লিখুন..." 
+                        class="w-full py-2.5 px-4 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition text-sm shadow-md cursor-pointer">
+                    ➕ প্রম্পট প্রকাশ করুন
+                </button>
+            </form>
+        </div>
+  
