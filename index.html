@@ -294,7 +294,7 @@
             <h1>📞 <span>RKC</span> VoIP</h1>
         </div>
 
-        <!-- পেজ ১: লগইন ও রেজিস্ট্রেশন পেজ (ফায়ারবেস ইমেইল ও পাসওয়ার্ড যুক্ত) -->
+        <!-- পেজ ১: লগইন ও রেজিস্ট্রেশন পেজ -->
         <div id="loginPage" class="page active">
             <div class="logo-area">
                 <h2>স্বাগতম!</h2>
@@ -307,7 +307,7 @@
                 <input type="email" id="emailInput" class="input-box" placeholder="user@gmail.com">
             </div>
             <div class="input-group">
-                <label>পাসওয়ার্ড</label>
+                <label>পাসওয়ার্ড (কমপক্ষে ৬ অক্ষরের)</label>
                 <input type="password" id="passwordInput" class="input-box" placeholder="পাসওয়ার্ড দিন">
             </div>
             <button class="btn btn-primary" onclick="registerUser()">রেজিস্ট্রেশন করুন</button>
@@ -413,7 +413,6 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ফায়ারবেস কনফিগারেশন
         const firebaseConfig = {
             apiKey: "AIzaSyBH3RuAfTRim8tPpNZ6tOUv2JuyrSQFQyY",
             authDomain: "rkc-voip.firebaseapp.com",
@@ -437,14 +436,14 @@
             document.getElementById(pageId).classList.add('active');
         }
 
-        // ফায়ারবেস রেজিস্ট্রেশন
         window.registerUser = async function() {
-            let email = document.getElementById("emailInput").value;
+            let email = document.getElementById("emailInput").value.trim();
             let password = document.getElementById("passwordInput").value;
             let errorTag = document.getElementById("authError");
+            errorTag.innerText = "";
 
             if(!email || !password) {
-                errorTag.innerText = "দয়া করে জিমেইল এবং পাসওয়ার্ড উভয় দিন!";
+                errorTag.innerText = "দয়া করে জিমেইল এবং পাসওয়ার্ড দিন!";
                 return;
             }
 
@@ -452,7 +451,6 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // ডাটাবেজে নতুন ইউজারের জন্য ১.০০ টাকা ফ্রি ব্যালেন্স সেট করা
                 await setDoc(doc(db, "users", user.uid), {
                     email: email,
                     balance: 1.00,
@@ -465,11 +463,16 @@
             }
         }
 
-        // ফায়ারবেস লগইন
         window.loginUser = async function() {
-            let email = document.getElementById("emailInput").value;
+            let email = document.getElementById("emailInput").value.trim();
             let password = document.getElementById("passwordInput").value;
             let errorTag = document.getElementById("authError");
+            errorTag.innerText = "";
+
+            if(!email || !password) {
+                errorTag.innerText = "দয়া করে জিমেইল এবং পাসওয়ার্ড দিন!";
+                return;
+            }
 
             try {
                 await signInWithEmailAndPassword(auth, email, password);
@@ -478,19 +481,16 @@
             }
         }
 
-        // লগআউট
         window.logoutUser = async function() {
             await signOut(auth);
         }
 
-        // ইউজার স্ট্যাটাত ট্র্যাক করা এবং ডাটাবেজ থেকে ব্যালেন্স আনা
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUserId = user.uid;
                 document.getElementById("displayPhone").innerText = "ইউজার: " + user.email;
                 showPage('dashboardPage');
 
-                // ডাটাবেজ থেকে রিয়েল ব্যালেন্স ফেচ করা
                 const docRef = doc(db, "users", user.uid);
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
@@ -528,12 +528,19 @@
 
         window.endCall = function() {
             let timeNow = new Date().toLocaleTimeString();
-            callLogs.unshift(`<span>📞 ${activeCallNumber}</span> <span style="color:#888;">${timeNow}</span>`);
+            callLogs.unshift(`<div class="history-item"><span>📞 ${activeCallNumber}</span> <span style="color:#888;">${timeNow}</span></div>`);
             updateCallHistoryUI();
 
             alert("কল সমাপ্ত হয়েছে।");
             document.getElementById('dialScreen').value = "";
             showPage('dashboardPage');
+        }
+
+        function updateCallHistoryUI() {
+            let historyList = document.getElementById("callHistoryList");
+            if(callLogs.length > 0) {
+                historyList.innerHTML = callLogs.join('');
+            }
         }
 
         window.setAmount = function(amt) { document.getElementById('customAmount').value = amt; }
@@ -548,10 +555,7 @@
                     let currentBal = docSnap.data().balance;
                     let newBal = currentBal + amt;
 
-                    // ডাটাবেজে ব্যালেন্স আপডেট করা
                     await updateDoc(docRef, { balance: newBal });
                     updateBalanceUI(newBal);
 
-                    alert("সফলভাবে " + amt + " টাকা রিচার্জ হয়েছে!");
-                    document.getElementById('customAmount').value = "";
-                    showPage('dashboa
+                    alert("সফলভাবে " + amt + " টাকা র
