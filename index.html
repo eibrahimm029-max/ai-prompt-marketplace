@@ -70,25 +70,26 @@
             <button class="key-btn" onclick="pressKey('8')">8</button>
             <button class="key-btn" onclick="pressKey('9')">9</button>
             <button class="key-btn" onclick="pressKey('*')">*</button>
-            <button class="key-btn" onclick="pressKey('0')">0</button>
+            <button class="key-btn zero-btn" onclick="pressKey('0')">0</button>
             <button class="key-btn" onclick="pressKey('#')">#</button>
         </div>
 
-        <div class="action-buttons">
-            <button class="action-btn contacts-btn" onclick="showPage('contactsPage')">📇</button>
-            <button class="action-btn call-btn" onclick="makeCall()">📞</button>
-            <button class="action-btn clear-btn" onclick="clearScreen()">🗑️</button>
+        <!-- আপনার CSS ক্লাসের সাথে মিল রেখে সঠিক করা অ্যাকশন বার -->
+        <div class="call-action-bar">
+            <button class="action-side-btn" onclick="showPage('contactsPage')">📇</button>
+            <button class="call-btn" onclick="makeCall()">📞</button>
+            <button class="action-side-btn" onclick="clearScreen()">🗑️</button>
         </div>
     </div>
 
     <!-- পেজ ৩: কলিং স্ক্রিন -->
     <div id="callingPage" class="page">
-        <div class="calling-card">
+        <div class="calling-screen">
             <h3>📞 RKC VoIP</h3>
-            <p style="color: #333; margin: 10px 0;">কল হচ্ছে...</p>
+            <p>কল হচ্ছে...</p>
             <h2 id="callingNumberDisplay" style="color: #27ae60; margin: 15px 0;">01795624217</h2>
-            <div class="animation-icon">⏳</div>
-            <button class="btn btn-danger" onclick="endCall()" style="margin-top: 20px;">কল কাটুন ❌</button>
+            <div style="font-size: 30px; margin: 15px 0;">⏳</div>
+            <button class="btn btn-danger" onclick="endCall()">কল কাটুন ❌</button>
         </div>
     </div>
 
@@ -105,28 +106,35 @@
             <input type="text" id="contactPhoto" class="input-box" placeholder="ছবির লিংক (ঐচ্ছিক)">
         </div>
         <button class="btn btn-primary" onclick="saveContact()">সেভ করুন</button>
-        <button class="btn btn-verify" onclick="showPage('dashboardPage')" style="margin-top: 5px; background-color: #7f8c8d;">ফিরে যান</button>
+        <button class="btn btn-secondary" onclick="showPage('dashboardPage')">ফিরে যান</button>
         
-        <div id="contactListUI" style="margin-top: 15px; max-height: 250px; overflow-y: auto;"></div>
+        <div class="contact-list-box" id="contactListUI" style="margin-top: 15px;"></div>
     </div>
 
     <!-- পেজ ৫: কল হিস্ট্রি পেজ -->
     <div id="callHistoryPage" class="page">
         <h2>📞 কল হিস্ট্রি</h2>
-        <div id="callHistoryList" style="margin-top: 15px; max-height: 300px; overflow-y: auto;">
-            <p style="text-align: center; color: #666;">কোনো কল রেকর্ড নেই।</p>
+        <div class="history-box" id="callHistoryList" style="margin-top: 15px;">
+            <p style="text-align: center; color: #666; font-size: 13px;">কোনো কল রেকর্ড নেই।</p>
         </div>
-        <button class="btn btn-primary" onclick="showPage('dashboardPage')" style="margin-top: 15px;">ফিরে যান</button>
+        <button class="btn btn-primary" onclick="showPage('dashboardPage')">ফিরে যান</button>
     </div>
 
     <!-- পেজ ৬: রিচার্জ পেজ -->
     <div id="rechargePage" class="page">
-        <h2>💳 ব্যালেন্স রিচার্জ</h2>
-        <p style="font-size: 13px; color: #555; text-align: center; margin-bottom: 15px;">বর্তমান ব্যালেন্স: <b id="rechargeBalanceDisplay" style="color: #27ae60;">৳ 0.00</b></p>
+        <div class="recharge-header">
+            <h2>💳 ব্যালেন্স রিচার্জ</h2>
+        </div>
         
-        <div style="background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; font-size: 13px;">
-            <p style="margin: 0 0 5px 0;"><b>বিকাশ/নগদ (সেন্ড মানি):</b></p>
-            <p style="margin: 0 0 5px 0; color: #e74c3c; font-weight: bold;" id="adminBkash">01795624217 <span onclick="copyNumber('adminBkash')" style="cursor: pointer; font-size: 11px; color: #2980b9;">[কপি]</span></p>
+        <div class="current-balance">
+            <p style="font-size: 13px; color: #555; margin-bottom: 5px;">বর্তমান ব্যালেন্স</p>
+            <h2 id="rechargeBalanceDisplay">৳ 0.00</h2>
+        </div>
+        
+        <div class="payment-info-box">
+            <p>বিকাশ/নগদ (সেন্ড মানি) <span class="send-money-tag">সরাসরি</span></p>
+            <span id="adminBkash" style="color: #e74c3c; font-size: 13px;">01795624217</span>
+            <button class="copy-btn" onclick="copyNumber('adminBkash')">কপি করুন</button>
         </div>
 
         <div class="input-group">
@@ -134,10 +142,10 @@
             <input type="number" id="customAmount" class="input-box" placeholder="যেমন: ১০০">
         </div>
         
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <button class="btn btn-verify" style="margin:0; font-size: 12px;" onclick="setAmount(50)">৳ ৫০</button>
-            <button class="btn btn-verify" style="margin:0; font-size: 12px;" onclick="setAmount(100)">৳ ১০০</button>
-            <button class="btn btn-verify" style="margin:0; font-size: 12px;" onclick="setAmount(500)">৳ ৫০০</button>
+        <div class="amount-grid">
+            <button class="amount-btn" onclick="setAmount(50)">৳ ৫০</button>
+            <button class="amount-btn" onclick="setAmount(100)">৳ ১০০</button>
+            <button class="amount-btn" onclick="setAmount(500)">৳ ৫০০</button>
         </div>
 
         <div class="input-group">
@@ -146,7 +154,7 @@
         </div>
 
         <button class="btn btn-primary" onclick="processAIRecharge()">রিচার্জ রিকোয়েস্ট পাঠান</button>
-        <button class="btn btn-verify" onclick="showPage('dashboardPage')" style="margin-top: 5px; background-color: #7f8c8d;">ফিরে যান</button>
+        <button class="btn btn-secondary" onclick="showPage('dashboardPage')">ফিরে যান</button>
     </div>
 
     <!-- পেজ ৭: এডমিন প্যানেল পেজ -->
@@ -154,17 +162,18 @@
         <h2>🛡️ এডমিন প্যানেল</h2>
         <p style="font-size: 12px; color: #666; text-align: center; margin-bottom: 10px;">সকল রিচার্জ রিকোয়েস্ট</p>
         
-        <div id="adminRequestList" style="max-height: 320px; overflow-y: auto;">
-            <p style="text-align: center; color: #666;">লোড হচ্ছে...</p>
+        <div class="history-box" id="adminRequestList" style="max-height: 280px;">
+            <p style="text-align: center; color: #666; font-size: 13px;">লোড হচ্ছে...</p>
         </div>
 
-        <button class="btn btn-primary" onclick="showPage('dashboardPage')" style="margin-top: 15px;">ফিরে যান</button>
+        <button class="btn btn-primary" onclick="showPage('dashboardPage')">ফিরে যান</button>
     </div>
 
 </div>
 
-<!-- জাভাস্ক্রিপ্ট ফাইল সংযোগ (খুবই গুরুত্বপূর্ণ) -->
+<!-- জাভাস্ক্রিপ্ট ফাইল সংযোগ -->
 <script type="module" src="script.js"></script>
 
 </body>
-</html>
+                                       </html>
+                                       
