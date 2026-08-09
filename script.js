@@ -16,13 +16,39 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- Zadarma আন্তর্জাতিক SIP কনফিগারেশন (আপনার টেস্টিং ও কথা বলার জন্য সুরক্ষিতভাবে যুক্ত) ---
-const ZADARMA_SIP_CONFIG = {
-    server: "sip.zadarma.com",
-    login: "208872",
-    password: "Eguu7af18C",
-    callerId: "+8801753779200"
+// --- Zadarma SIP কনফিগারেশন ও JsSIP ইউজার এজেন্ট ---
+let ua = null;
+let currentSession = null;
+const ZADARMA_CONFIG = {
+    uri: 'sip:208872@sip.zadarma.com',
+    password: 'Eguu7af18C',
+    sockets: [ new JsSIP.WebSocketInterface('wss://sip.zadarma.com:5061') ] // Zadarma Secure WebSocket
 };
+
+function initVoIP() {
+    try {
+        let socket = new JsSIP.WebSocketInterface('wss://sip.zadarma.com');
+        let configuration = {
+            sockets: [ socket ],
+            uri: 'sip:208872@sip.zadarma.com',
+            password: 'Eguu7af18C',
+            register: true
+        };
+        ua = new JsSIP.UA(configuration);
+        
+        ua.on('registered', function(e) {
+            console.log("Zadarma SIP Registered Successfully!");
+        });
+        
+        ua.on('registrationFailed', function(e) {
+            console.log("SIP Registration Failed: ", e.cause);
+        });
+
+        ua.start();
+    } catch (err) {
+        console.log("VoIP Init Error: ", err);
+    }
+}
 
 let activeCallNumber = "";
 let currentUserId = null;
@@ -31,7 +57,6 @@ let callLogs = [];
 let savedContacts = [];
 let currentBalanceValue = 0;
 
-// আপনার নির্দিষ্ট অ্যাডমিন জিমেইল এখানে লক করা হলো
 const ADMIN_EMAIL = "eibrahimm028q@gmail.com";
 
 window.showPage = function(pageId) {
@@ -132,6 +157,7 @@ onAuthStateChanged(auth, async (user) => {
         if(emailElem) emailElem.innerText = "ID: " + user.email;
         
         window.showPage('dashboardPage');
+        initVoIP(); // ইউজার লগইন করার সাথে সাথে VoIP কানেকশন ইনিশিয়ালাইজ হবে
 
         try {
             const docRef = doc(db, "users", user.uid);
@@ -173,29 +199,57 @@ window.clearScreen = function() {
     if(screen) screen.value = "";
 }
 
+// --- আসল রিয়েল কল মেক ফাংশন (Zadarma সার্ভারের মাধ্যমে) ---
 window.makeCall = function() {
     let screen = document.getElementById('dialScreen');
-    let num = screen ? screen.value : "";
+    let num = screen ? screen.value.trim() : "";
     if(num.length < 11) {
         alert("সঠিক ১১ ডিজিটের নম্বর লিখুন!");
-    } else {
-        activeCallNumber = num;
-        let numDisplay = document.getElementById("callingNumberDisplay");
-        if(numDisplay) numDisplay.innerText = num;
-        
-        // --- Zadarma SIP কানেকশন ট্রিগার লগ ---
-        console.log("Calling via Zadarma Server:", ZADARMA_SIP_CONFIG.server, "Using Account:", ZADARMA_SIP_CONFIG.login, "Target:", num);
+        return;
+    }
+    
+    activeCallNumber = num;
+    let numDisplay = document.getElementById("callingNumberDisplay");
+    if(numDisplay) numDisplay.innerText = num;
+    window.showPage('callingPage');
 
-        window.showPage('callingPage');
+    if (ua && ua.isRegistered()) {
+        // আন্তর্জাতিক ফরম্যাটে কল পাঠানো (যেমন বাংলাদেশের কোড +88 সহ)
+        let targetNumber = num.startsWith("+") ? num : "+88" + num;
+        let eventHandlers = {
+            'progress': function(e) { console.log('কল রিং হচ্ছে...'); },
+            'confirmed': function(e) { console.log('কল কানেক্ট হয়েছে!'); },
+            'ended': function(e) { console.log('কল শেষ।'); window.endCall(); },
+            'failed': function(e) { console.log('কল ব্যর্থ হয়েছে: ', e.cause); }
+        };
+        
+        let options = {
+            'mediaConstraints': { 'audio': true, 'video': false },
+            'eventHandlers': eventHandlers
+        };
+        
+        try {
+            currentSession = ua.call('sip:' + targetNumber + '@sip.zadarma.com', options);
+        } catch (err) {
+            console.log("Call initiate error:", err);
+        }
+    } else {
+        console.log("SIP সার্ভার এখনো রেজিস্টার্ড হয়নি বা অফলাইন আছে।");
     }
 }
 
 window.endCall = function() {
+    if (currentSession) {
+        try {
+            currentSession.terminate();
+        } catch(e) {}
+        currentSession = null;
+    }
+
     let timeNow = new Date().toLocaleTimeString();
     callLogs.unshift({ phone: activeCallNumber, time: timeNow });
     updateCallHistoryUI();
 
-    alert("কল সমাপ্ত হয়েছে।");
     let screen = document.getElementById('dialScreen');
     if(screen) screen.value = "";
     window.showPage('dashboardPage');
@@ -389,4 +443,4 @@ window.approveRechargeFromAdmin = async function(userId, rechargeAmount, request
         alert("টাকা যোগ করতে সমস্যা হয়েছে: " + error.message);
     }
     }
-            
+        
