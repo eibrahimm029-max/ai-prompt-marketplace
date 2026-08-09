@@ -3,178 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RKC VoIP - প্রফেশনাল কলিং প্ল্যাটফর্ম</title>
+    <title>RKC VoIP - পেশাদার কলিং প্ল্যাটফর্ম</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jssip/3.9.0/jssip.min.js"></script>
 </head>
 <body>
-        <!-- কনসোল লগ বক্স -->
+
+    <!-- কনসোল লগ বক্স -->
     <div id="debugLogBox" style="background: #000; color: #00ff00; padding: 10px; font-family: monospace; font-size: 11px; height: 100px; overflow-y: auto; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999;">
         > System Logs:<br>
     </div>
-    
 
-    <div class="main-container">
-        <div class="brand-header">
-            <h1>📞 <span>RKC</span> VoIP</h1>
+<div class="main-container">
+    <div class="brand-header">
+        <h1>📞 <span>RKC</span> VoIP</h1>
+    </div>
+
+    <!-- পেজ ১: লগইন ও রেজিস্ট্রেশন পেজ -->
+    <div id="loginPage" class="page active">
+        <div class="logo-area">
+            <h2>স্বাগতম!</h2>
+            <p>জিমেইল দিয়ে লগইন বা রেজিস্ট্রেশন করুন</p>
+        </div>
+        <div class="bonus-badge">🎁 নতুন অ্যাকাউন্টে ১.০০ টাকা ফ্রি ব্যালেন্স!</div>
+
+        <div class="input-group">
+            <label>আপনার জিমেইল</label>
+            <input type="email" id="emailInput" class="input-box" placeholder="user@gmail.com">
+        </div>
+        <div class="input-group">
+            <label>পাসওয়ার্ড (কমপক্ষে ৬ অক্ষরের)</label>
+            <input type="password" id="passwordInput" class="input-box" placeholder="পাসওয়ার্ড দিন">
+        </div>
+        <button class="btn btn-primary" onclick="registerUser()">রেজিস্ট্রেশন করুন</button>
+        <button class="btn btn-verify" onclick="loginUser()" style="margin-top: 5px;">লগইন করুন</button>
+        <p id="authError" style="color: red; font-size: 12px; margin-top: 8px; text-align: center;"></p>
+    </div>
+
+    <!-- পেজ ২: ডায়ালপ্যাড ড্যাশবোর্ড পেজ -->
+    <div id="dashboardPage" class="page">
+        <div class="header">
+            <div class="balance-box" onclick="showPage('rechargePage')" title="রিচার্জ করতে ক্লিক করুন">ব্যালেন্স: <span id="userBalance">৳ 0.00</span> ➕</div>
+            <div class="menu-icon" onclick="toggleMenu(event)">☰</div>
         </div>
 
-        <!-- পেজ ১: লগইন ও রেজিস্ট্রেশন পেজ -->
-        <div id="loginPage" class="page active">
-            <div class="logo-area">
-                <h2>স্বাগতম!</h2>
-                <p>জিমেইল দিয়ে লগইন বা রেজিস্ট্রেশন করুন</p>
-            </div>
-            <div class="bonus-badge">🎁 নতুন অ্যাকাউন্টে ১.০০ টাকা ফ্রি ব্যালেন্স!</div>
-            
-            <div class="input-group">
-                <label>আপনার জিমেইল</label>
-                <input type="email" id="emailInput" class="input-box" placeholder="user@gmail.com">
-            </div>
-            <div class="input-group">
-                <label>পাসওয়ার্ড (কমপক্ষে ৬ অক্ষরের)</label>
-                <input type="password" id="passwordInput" class="input-box" placeholder="পাসওয়ার্ড দিন">
-            </div>
-            <button class="btn btn-primary" onclick="registerUser()">রেজিস্ট্রেশন করুন</button>
-            <button class="btn btn-verify" onclick="loginUser()" style="margin-top: 5px;">লগইন করুন</button>
-            <p id="authError" style="color: red; font-size: 12px; margin-top: 8px; text-align: center;"></p>
+        <div id="settingsMenu" class="dropdown-menu">
+            <div class="menu-user-info" id="menuUserEmail">ID: Loading...</div>
+            <div class="menu-item" onclick="showPage('callHistoryPage'); closeMenu()">📞 কল হিস্ট্রি</div>
+            <div class="menu-item" onclick="showPage('adminPage'); closeMenu()">🛡️ এডমিন প্যানেল</div>
+            <div class="menu-item logout" onclick="logoutUser()">🚪 লগআউট</div>
         </div>
 
-        <!-- পেজ ২: ডায়ালপ্যাড ড্যাশবোর্ড পেজ -->
-        <div id="dashboardPage" class="page">
-            <div class="header">
-                <div class="balance-box" onclick="showPage('rechargePage')" title="রিচার্জ করতে ক্লিক করুন">ব্যালেন্স: <span id="userBalance">৳ 0.00</span> ➕</div>
-                
-                <div class="menu-icon" onclick="toggleMenu(event)">☰</div>
-
-                <div id="settingsMenu" class="dropdown-menu">
-                    <div class="menu-user-info" id="menuUserEmail">ID: Loading...</div>
-                    <div class="menu-item" onclick="showPage('callHistoryPage'); closeMenu()">📋 কল হিস্ট্রি</div>
-                    <!-- অ্যাডমিন প্যানেল মেনু অপশন (এটি সবার জন্য দেখাবে, কিন্তু ক্লিক করলে শুধু আপনার জিমেইল দিয়েই খুলবে) -->
-                    <div class="menu-item" onclick="showPage('adminPage'); closeMenu()" style="color: #e74c3c; font-weight: bold;">⚙️ অ্যাডমিন প্যানেল</div>
-                    <div class="menu-item logout" onclick="logoutUser()">🚪 লগআউট</div>
-                </div>
-            </div>
-
-            <div class="screen-box">
-                <input type="text" id="dialScreen" class="screen" placeholder="017xxxxxxxx" readonly>
-                <button class="backspace-btn-inside" onclick="deleteDigit()">⌫</button>
-            </div>
-
-            <div class="keypad">
-                <button class="key-btn" onclick="pressKey('1')">1</button>
-                <button class="key-btn" onclick="pressKey('2')">2</button>
-                <button class="key-btn" onclick="pressKey('3')">3</button>
-                <button class="key-btn" onclick="pressKey('4')">4</button>
-                <button class="key-btn" onclick="pressKey('5')">5</button>
-                <button class="key-btn" onclick="pressKey('6')">6</button>
-                <button class="key-btn" onclick="pressKey('7')">7</button>
-                <button class="key-btn" onclick="pressKey('8')">8</button>
-                <button class="key-btn" onclick="pressKey('9')">9</button>
-                <button class="key-btn zero-btn" onclick="pressKey('0')">0</button>
-            </div>
-
-            <div class="call-action-bar">
-                <button class="action-side-btn" onclick="showPage('contactsPage')" title="কন্টাক্ট লিস্ট">📇</button>
-                <button class="call-btn" onclick="makeCall()">📞</button>
-                <button class="action-side-btn" onclick="clearScreen()" title="সব মুছুন">🗑️</button>
-            </div>
+        <div class="screen-box">
+            <input type="text" id="dialScreen" class="screen" placeholder="017xxxxxxxx">
+            <button class="backspace-btn-inside" onclick="deleteDigit()">⌫</button>
         </div>
 
-        <!-- পেজ ৩: কলিং স্ক্রিন পেজ -->
-        <div id="callingPage" class="page">
-            <div class="calling-screen">
-                <h3>কল হচ্ছে...</h3>
-                <p id="callingNumberDisplay">017XXXXXXXX</p>
-                <div style="font-size: 40px; margin-bottom: 30px;">⏳</div>
-                <button class="btn btn-danger" onclick="endCall()">কল কাটুন ❌</button>
-            </div>
+        <div class="keypad">
+            <button class="key-btn" onclick="pressKey('1')">1</button>
+            <button class="key-btn" onclick="pressKey('2')">2</button>
+            <button class="key-btn" onclick="pressKey('3')">3</button>
+            <button class="key-btn" onclick="pressKey('4')">4</button>
+            <button class="key-btn" onclick="pressKey('5')">5</button>
+            <button class="key-btn" onclick="pressKey('6')">6</button>
+            <button class="key-btn" onclick="pressKey('7')">7</button>
+            <button class="key-btn" onclick="pressKey('8')">8</button>
+            <button class="key-btn" onclick="pressKey('9')">9</button>
+            <button class="key-btn" onclick="pressKey('*')">*</button>
+            <button class="key-btn" onclick="pressKey('0')">0</button>
+            <button class="key-btn" onclick="pressKey('#')">#</button>
         </div>
 
-        <!-- পেজ ৪: কন্টাক্ট লিস্ট পেজ -->
-        <div id="contactsPage" class="page">
-            <div class="recharge-header">
-                <h3>কন্টাক্ট সেভ করুন</h3>
-                <span class="menu-link" onclick="showPage('dashboardPage')" style="color:#3498db; cursor:pointer; font-size:13px; font-weight:bold;">← ড্যাশবোর্ড</span>
-            </div>
-            <input type="text" id="contactName" class="input-box" placeholder="নাম (যেমন: আব্বা)" style="margin-bottom: 8px; font-size: 14px;">
-            <input type="text" id="contactPhone" class="input-box" placeholder="নম্বর (017xxxxxxxx)" style="margin-bottom: 8px; font-size: 14px;">
-            <input type="text" id="contactPhoto" class="input-box" placeholder="প্রোফাইল ছবির লিংক (ঐচ্ছিক)" style="margin-bottom: 10px; font-size: 14px;">
-            <button class="btn btn-primary" onclick="saveContact()" style="margin-top: 0; margin-bottom: 12px; padding: 8px;">কন্টাক্ট সেভ করুন</button>
-
-            <div class="contact-list-box" id="contactListUI">
-                <div class="history-item" style="color: #888; justify-content: center;">কোনো কন্টাক্ট সেভ করা নেই</div>
-            </div>
-            <button class="btn btn-secondary" onclick="showPage('dashboardPage')">ফিরে যান</button>
-        </div>
-
-        <!-- পেজ ৫: কল হিস্ট্রি পেজ -->
-        <div id="callHistoryPage" class="page">
-            <div class="recharge-header">
-                <h3>কল হিস্ট্রি</h3>
-                <span class="menu-link" onclick="showPage('dashboardPage')" style="color:#3498db; cursor:pointer; font-size:13px; font-weight:bold;">← ড্যাশবোর্ড</span>
-            </div>
-            <div class="history-box" id="callHistoryList">
-                <div class="history-item" style="color: #888; justify-content: center;">কোনো কল রেকর্ড নেই</div>
-            </div>
-            <button class="btn btn-secondary" onclick="showPage('dashboardPage')">ফিরে যান</button>
-        </div>
-
-        <!-- পেজ ৬: রিচার্জ পেজ -->
-        <div id="rechargePage" class="page">
-            <div class="recharge-header">
-                <h3>ব্যালেন্স রিচার্জ</h3>
-                <span class="menu-link" onclick="showPage('dashboardPage')" style="color:#3498db; cursor:pointer; font-size:13px; font-weight:bold;">← ড্যাশবোর্ড</span>
-            </div>
-
-            <div class="current-balance">
-                <span>বর্তমান ব্যালেন্স</span>
-                <h2 id="rechargeBalanceDisplay">৳ 0.00</h2>
-            </div>
-
-            <div class="payment-info-box">
-                <p style="color: #e2136e;">
-                    <span>📌 বিকাশ <small class="send-money-tag">(সেন্ড মানি)</small>: <strong id="num1">01753779200</strong></span>
-                    <button class="copy-btn" onclick="copyNumber('num1')">📋 কপি</button>
-                </p>
-                <p style="color: #27ae60; margin-bottom: 0;">
-                    <span>📌 নগদ <small class="send-money-tag">(সেন্ড মানি)</small>: <strong id="num2">01795624217</strong></span>
-                    <button class="copy-db" onclick="copyNumber('num2')">📋 কপি</button>
-                </p>
-            </div>
-
-            <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #34495e;">পরিমাণ সিলেক্ট করুন:</div>
-            <div class="amount-grid">
-                <button class="amount-btn" onclick="setAmount(50)">৳ ৫০</button>
-                <button class="amount-btn" onclick="setAmount(100)">৳ ১০০</button>
-                <button class="amount-btn" onclick="setAmount(200)">৳ ২০০</button>
-                <button class="amount-btn" onclick="setAmount(500)">৳ ৫০০</button>
-                <button class="amount-btn" onclick="setAmount(1000)">৳ ১০০০</button>
-                <button class="amount-btn" onclick="setAmount(2000)">৳ ২০০০</button>
-            </div>
-
-            <input type="number" id="customAmount" class="input-box" placeholder="টাকার পরিমাণ লিখুন" style="margin-bottom: 10px;">
-            <input type="text" id="trxIdInput" class="input-box" placeholder="TrxID (যেমন: 9N7A...)" style="margin-bottom: 15px; font-size: 14px;">
-
-            <button class="btn btn-primary" onclick="processAIRecharge()">🤖 এআই অটো রিচার্জ সাবমিট করুন</button>
-        </div>
-
-        <!-- পেজ ৭: অ্যাডমিন প্যানেল পেজ (শুধুমাত্র আপনার জন্য সুরক্ষিত) -->
-        <div id="adminPage" class="page">
-            <div class="recharge-header">
-                <h3>অ্যাডমিন প্যানেল - রিচার্জ রিকোয়েস্ট</h3>
-                <span class="menu-link" onclick="showPage('dashboardPage')" style="color:#3498db; cursor:pointer; font-size:13px; font-weight:bold;">← ড্যাশবোর্ড</span>
-            </div>
-            
-            <div id="adminRequestList" style="margin-top: 15px;">
-                <!-- রিকোয়েস্টগুলো এখানে অটোমেটিক লোড হবে -->
-                লোড হচ্ছে...
-            </div>
-
-            <button class="btn btn-secondary" onclick="showPage('dashboardPage')" style="margin-top: 15px;">ড্যাশবোর্ডে ফিরে যান</button>
+        <div class="action-buttons">
+            <button class="action-btn contacts-btn" onclick="showPage('contactsPage')">📇</button>
+            <button class="action-btn call-btn" onclick="makeCall()">📞</button>
+            <button class="action-btn clear-btn" onclick="clearScreen()">🗑️</button>
         </div>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <!-- পেজ ৩: কলিং স্ক্রিন -->
+    <div id="callingPage" class="page">
+        <div class="calling-card">
+            <h3>📞 RKC VoIP</h3>
+            <p style="color: #333; margin: 10px 0;">কল হচ্ছে...</p>
+            <h2 id="callingNumberDisplay" style="color: #27ae60; margin: 15px 0;">01795624217</h2>
+            <div class="animation-icon">⏳</div>
+            <button class="btn btn-danger" onclick="endCall()" style="margin-top: 20px;">কল কাটুন ❌</button>
+        </div>
+    </div>
+
+    <!-- পেজ ৪: কন্টাক্টস পেজ -->
+    <div id="contactsPage" class="page">
+        <h2>📇 কন্টাক্ট লিস্ট</h2>
+        <div class="input-group" style="margin-top: 10px;">
+            <input type="text" id="contactName" class="input-box" placeholder="নাম লিখুন">
+        </div>
+        <div class="input-group">
+            <input type="text" id="contactPhone" class="input-box" placeholder="নম্বর (১১ ডিজিট)">
+        </div>
+        <div class="input-group">
+            <input type="text" id="contactPhoto" class="input-box" placeholder="ছবির লিংক (ঐচ্ছিক)">
+        </div>
+        <button class="btn btn-primary" onclick="saveContact()">সেভ করুন</button>
+        <button class="btn btn-verify" onclick="showPage('dashboardPage')" style="margin-top: 5px; background-color: #7f8c8d;">ফিরে যান</button>
+        
+        <div id="contactListUI" style="margin-top: 15px; max-height: 250px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- পেজ ৫: কল হিস্ট্রি পেজ -->
+    <div id="callHistoryPage" class="page">
+        <h2>📞 কল হিস্ট্রি</h2>
+        <div id="callHistoryList" style="margin-top: 15px; max-height: 300px; overflow-y: auto;">
+            <p style="text-align: center; color: #666;">কোনো কল রেকর্ড নেই।</p>
+        </div>
+        <button class="btn btn-primary" onclick="showPage('dashboardPage')" style="margin-top: 15px;">ফিরে যান</button>
+    </div>
+
+    <!-- পেজ ৬: রিচার্জ পেজ -->
+    <div id="rechargePage" class="page">
+        <h2>💳 ব্যালেন্স রিচার্জ</h2>
+        <p style="font-size: 13px; color: #555; text-align: center; margin-bottom: 15px;">বর্তমান ব্যালেন্স: <b id="rechargeBalanceDisplay" style="color: #27ae60;">৳ 0.00</b></p>
+        
+        <div style="background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; font-size: 13px;">
+            <p style="margin: 0 0 5px 0;"><b>বিকাশ/নগদ (সেন্ড মানি):</b></p>
+            <p style="margin: 0 0 5px 0; color: #e74c3c; font-weight: bold;" id="adminBkash">01795624217 <span onclick="copyNumber('adminBkash')" style="cursor: pointer; font-size: 11px; color: #2980b9;">[কপি]</span></p>
+        </div>
+
+        <div class="input-group">
+            <label>টাকার পরিমাণ</label>
+            <input type="number" id="customAmount" class="input-box" placeholder="যেমন: ১০০">
+        </div>
+        
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <button class="btn btn-verify" style="margin:0; font-size: 12px;" onclick="setAmount(50)">৳ ৫০</button>
+            <button class="btn btn-verify" style="margin:0; font-size: 12px;" onclick="setAmount(100)">৳ ১০০</button>
+            <button class="btn btn-verify" style="margin:0; font-size: 12px;" onclick="setAmount(500)">৳ ৫০০</button>
+        </div>
+
+        <div class="input-group">
+            <label>ট্রানজেকশন আইডি (TrxID)</label>
+            <input type="text" id="trxIdInput" class="input-box" placeholder="যেমন: 9N7A...">
+        </div>
+
+        <button class="btn btn-primary" onclick="processAIRecharge()">রিচার্জ রিকোয়েস্ট পাঠান</button>
+        <button class="btn btn-verify" onclick="showPage('dashboardPage')" style="margin-top: 5px; background-color: #7f8c8d;">ফিরে যান</button>
+    </div>
+
+    <!-- পেজ ৭: এডমিন প্যানেল পেজ -->
+    <div id="adminPage" class="page">
+        <h2>🛡️ এডমিন প্যানেল</h2>
+        <p style="font-size: 12px; color: #666; text-align: center; margin-bottom: 10px;">সকল রিচার্জ রিকোয়েস্ট</p>
+        
+        <div id="adminRequestList" style="max-height: 320px; overflow-y: auto;">
+            <p style="text-align: center; color: #666;">লোড হচ্ছে...</p>
+        </div>
+
+        <button class="btn btn-primary" onclick="showPage('dashboardPage')" style="margin-top: 15px;">ফিরে যান</button>
+    </div>
+
+</div>
+
 </body>
 </html>
