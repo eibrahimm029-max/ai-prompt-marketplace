@@ -32,7 +32,7 @@ const db = getFirestore(app);
 let currentSession = null;
 let ua = null; // JsSIP User Agent
 
-// ওয়েবআরটিসি (WebRTC) ও Zadarma SIP ক্লায়েন্ট ইনিট ফাংশন
+// ওয়েবআরটিসি (WebRTC) ও Zadarma SIP ক্লায়েন্ট ইনিট ফাংশন (রিয়েল ক্রেডেনশিয়াল যুক্ত করা হয়েছে)
 function initVoIP() {
     try {
         console.log("VoIP সিস্টেম প্রস্তুত করা হচ্ছে...");
@@ -41,15 +41,27 @@ function initVoIP() {
             return;
         }
 
-        // JsSIP কনফিগারেশন (আপনার Zadarma SIP অ্যাকাউন্ট ইনফো এখানে দিতে হবে)
+        // Zadarma SIP অ্যাকাউন্ট ইনফো দিয়ে কনফিগার করা হলো
         if (typeof JsSIP !== 'undefined') {
             let socket = new JsSIP.WebSocketInterface('wss://sip.zadarma.com:5061');
             let configuration = {
                 'sockets': [ socket ],
-                'uri': 'sip:YOUR_SIP_USER@sip.zadarma.com',
-                'password': 'YOUR_SIP_PASSWORD'
+                'uri': 'sip:584336-104@sip.zadarma.com',
+                'password': 'v1pj47bnTM',
+                'register': true
             };
-            console.log("Zadarma VoIP ও WebRTC সফলভাবে ইনিশিয়ালাইজ হয়েছে!");
+            
+            ua = new JsSIP.UA(configuration);
+
+            ua.on('registered', function(e) {
+                console.log("✅ Zadarma SIP সার্ভারে সফলভাবে রেজিস্টার্ড হয়েছে!");
+            });
+
+            ua.on('registrationFailed', function(e) {
+                console.log("❌ SIP রেজিস্ট্রেশন ব্যর্থ: " + e.cause);
+            });
+
+            ua.start();
         } else {
             console.log("Zadarma VoIP ও WebRTC সফলভাবে ইনিশিয়ালাইজ হয়েছে!");
         }
