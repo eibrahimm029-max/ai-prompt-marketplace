@@ -1,3 +1,16 @@
+// মোবাইল স্ক্রিনেই কনসোল দেখার ফাংশন
+(function () {
+    let oldLog = console.log;
+    console.log = function (message) {
+        oldLog.apply(console, arguments);
+        let box = document.getElementById("debugLogBox");
+        if (box) {
+            box.innerHTML += "&gt; " + message + "<br>";
+            box.scrollTop = box.scrollHeight;
+        }
+    };
+})();
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -21,13 +34,20 @@ let currentSession = null;
 
 function initVoIP() {
     try {
+        if (typeof JsSIP === 'undefined') {
+            console.log("JsSIP লাইব্রেরি লোড হয়নি!");
+            return;
+        }
+
         let socket = new JsSIP.WebSocketInterface('wss://sip.zadarma.com:5061');
         let configuration = {
             sockets: [ socket ],
             uri: 'sip:208872@sip.zadarma.com',
             password: 'Eguu7af18C',
-            register: true
+            register: true,
+            session_timers: false
         };
+        
         ua = new JsSIP.UA(configuration);
         
         ua.on('registered', function(e) {
@@ -35,12 +55,12 @@ function initVoIP() {
         });
         
         ua.on('registrationFailed', function(e) {
-            console.log("SIP Registration Failed: ", e.cause);
+            console.log("SIP Registration Failed: " + (e.cause || "Unknown"));
         });
 
         ua.start();
     } catch (err) {
-        console.log("VoIP Init Error: ", err);
+        console.log("VoIP Init Error: " + err.message);
     }
 }
 
@@ -429,5 +449,5 @@ window.approveRechargeFromAdmin = async function(userId, rechargeAmount, request
     } catch (error) {
         alert("সমস্যা হয়েছে: " + error.message);
     }
-        }
-            
+};
+    
