@@ -444,3 +444,22 @@ window.approveRechargeFromAdmin = async function(userId, rechargeAmount, request
     }
     }
         
+// ফাংশনগুলোকে গ্লোবাল উইন্ডো স্কোপে বাইন্ড করা
+window.registerUser = registerUser;
+window.loginUser = loginUser;
+window.logoutUser = logoutUser;
+window.showPage = showPage;
+window.toggleMenu = toggleMenu;
+window.closeMenu = closeMenu;
+window.pressKey = pressKey;
+window.deleteDigit = deleteDigit;
+window.clearScreen = window.clearScreen;
+window.makeCall = makeCall;
+window.endCall = endCall;
+window.saveContact = saveContact;
+window.dialContact = dialContact;
+window.copyNumber = copyNumber;
+window.setAmount = setAmount;
+window.processAIRecharge = processAIRecharge;
+window.loadAdminRequests = loadAdminRequests;
+window.approveRechargeFromAdmin = approveRechargeFromAdmin;
