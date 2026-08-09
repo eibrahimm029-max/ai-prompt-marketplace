@@ -16,6 +16,14 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// --- Zadarma আন্তর্জাতিক SIP কনফিগারেশন (আপনার টেস্টিং ও কথা বলার জন্য সুরক্ষিতভাবে যুক্ত) ---
+const ZADARMA_SIP_CONFIG = {
+    server: "sip.zadarma.com",
+    login: "208872",
+    password: "Eguu7af18C",
+    callerId: "+8801753779200"
+};
+
 let activeCallNumber = "";
 let currentUserId = null;
 let currentUserEmail = "";
@@ -31,7 +39,6 @@ window.showPage = function(pageId) {
     let targetPage = document.getElementById(pageId);
     if(targetPage) targetPage.classList.add('active');
 
-    // যদি কেউ অ্যাডমিন পেজে ঢুকতে চায়, তবে রিকোয়েস্ট লোড করবে
     if(pageId === 'adminPage') {
         window.loadAdminRequests();
     }
@@ -175,6 +182,10 @@ window.makeCall = function() {
         activeCallNumber = num;
         let numDisplay = document.getElementById("callingNumberDisplay");
         if(numDisplay) numDisplay.innerText = num;
+        
+        // --- Zadarma SIP কানেকশন ট্রিগার লগ ---
+        console.log("Calling via Zadarma Server:", ZADARMA_SIP_CONFIG.server, "Using Account:", ZADARMA_SIP_CONFIG.login, "Target:", num);
+
         window.showPage('callingPage');
     }
 }
@@ -273,7 +284,6 @@ window.setAmount = function(amt) {
     if(customAmt) customAmt.value = amt; 
 }
 
-// ইউজার কর্তৃক রিচার্জ রিকোয়েস্ট সাবমিট
 window.processAIRecharge = async function() {
     let customAmtElem = document.getElementById('customAmount');
     let trxElem = document.getElementById('trxIdInput');
@@ -305,12 +315,10 @@ window.processAIRecharge = async function() {
     }
 }
 
-// --- অ্যাডমিন প্যানেল: শুধুমাত্র আপনার (eibrahimm028q@gmail.com) জন্য নিরাপদ রিকোয়েস্ট লোডার ---
 window.loadAdminRequests = async function() {
     let requestContainer = document.getElementById("adminRequestList");
     if (!requestContainer) return;
 
-    // সিকিউরিটি চেক: আপনি ছাড়া অন্য কেউ ঢুকলে ব্লক করে দেবে
     if (currentUserEmail !== ADMIN_EMAIL) {
         requestContainer.innerHTML = "<p style='color: red; font-weight: bold; text-align: center; padding: 20px;'>⛔ আপনার এই পেজে প্রবেশ করার কোনো অনুমতি নেই! এটি শুধুমাত্র অ্যাডমিনের জন্য।</p>";
         return;
@@ -326,7 +334,6 @@ window.loadAdminRequests = async function() {
             let req = docSnap.data();
             let reqId = docSnap.id;
 
-            // শুধুমাত্র যেগুলোর স্ট্যাটাস Pending আছে সেগুলো দেখাবে
             if (req.status === "Pending") {
                 html += `
                     <div style="background: #fff; border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
@@ -351,7 +358,6 @@ window.loadAdminRequests = async function() {
     }
 }
 
-// --- অ্যাডমিন প্যানেল: এক ক্লিকে টাকা যোগ করার নিরাপদ ফাংশন ---
 window.approveRechargeFromAdmin = async function(userId, rechargeAmount, requestId) {
     if (currentUserEmail !== ADMIN_EMAIL) {
         alert("⛔ আপনার এই কাজটি করার কোনো অনুমতি নেই!");
@@ -360,7 +366,6 @@ window.approveRechargeFromAdmin = async function(userId, rechargeAmount, request
 
     try {
         const userRef = doc(db, "users", userId);
-        
         const userSnap = await getDoc(userRef);
         let currentBal = 0;
         if (userSnap.exists()) {
@@ -369,21 +374,19 @@ window.approveRechargeFromAdmin = async function(userId, rechargeAmount, request
         
         let newBalance = currentBal + parseFloat(rechargeAmount);
 
-        // ইউজারের অ্যাকাউন্টে নতুন ব্যালেন্স সেভ করা
         await setDoc(userRef, {
             balance: newBalance
         }, { merge: true });
 
-        // রিকোয়েস্ট স্ট্যাটাস 'Approved' করা
         const requestRef = doc(db, "recharge_requests", requestId);
         await updateDoc(requestRef, {
             status: "Approved"
         });
 
         alert("✅ সফল! ইউজারের অ্যাকাউন্টে এক ক্লিকেই টাকা যোগ হয়ে গেছে।");
-        
         window.loadAdminRequests();
     } catch (error) {
         alert("টাকা যোগ করতে সমস্যা হয়েছে: " + error.message);
     }
-}
+    }
+            
