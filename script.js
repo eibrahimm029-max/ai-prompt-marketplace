@@ -16,18 +16,12 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- Zadarma SIP কনফিগারেশন ও JsSIP ইউজার এজেন্ট ---
 let ua = null;
 let currentSession = null;
-const ZADARMA_CONFIG = {
-    uri: 'sip:208872@sip.zadarma.com',
-    password: 'Eguu7af18C',
-    sockets: [ new JsSIP.WebSocketInterface('wss://sip.zadarma.com:5061') ] // Zadarma Secure WebSocket
-};
 
 function initVoIP() {
     try {
-        let socket = new JsSIP.WebSocketInterface('wss://sip.zadarma.com');
+        let socket = new JsSIP.WebSocketInterface('wss://sip.zadarma.com:5061');
         let configuration = {
             sockets: [ socket ],
             uri: 'sip:208872@sip.zadarma.com',
@@ -157,7 +151,7 @@ onAuthStateChanged(auth, async (user) => {
         if(emailElem) emailElem.innerText = "ID: " + user.email;
         
         window.showPage('dashboardPage');
-        initVoIP(); // ইউজার লগইন করার সাথে সাথে VoIP কানেকশন ইনিশিয়ালাইজ হবে
+        initVoIP();
 
         try {
             const docRef = doc(db, "users", user.uid);
@@ -199,7 +193,6 @@ window.clearScreen = function() {
     if(screen) screen.value = "";
 }
 
-// --- আসল রিয়েল কল মেক ফাংশন (Zadarma সার্ভারের মাধ্যমে) ---
 window.makeCall = function() {
     let screen = document.getElementById('dialScreen');
     let num = screen ? screen.value.trim() : "";
@@ -214,7 +207,6 @@ window.makeCall = function() {
     window.showPage('callingPage');
 
     if (ua && ua.isRegistered()) {
-        // আন্তর্জাতিক ফরম্যাটে কল পাঠানো (যেমন বাংলাদেশের কোড +88 সহ)
         let targetNumber = num.startsWith("+") ? num : "+88" + num;
         let eventHandlers = {
             'progress': function(e) { console.log('কল রিং হচ্ছে...'); },
@@ -234,7 +226,7 @@ window.makeCall = function() {
             console.log("Call initiate error:", err);
         }
     } else {
-        console.log("SIP সার্ভার এখনো রেজিস্টার্ড হয়নি বা অফলাইন আছে।");
+        console.log("SIP সার্ভার এখনো রেজিস্টার্ড হয়নি।");
     }
 }
 
@@ -327,7 +319,7 @@ window.copyNumber = function(elementId) {
     let numElem = document.getElementById(elementId);
     let numText = numElem ? numElem.innerText : "";
     navigator.clipboard.writeText(numText).then(() => {
-        alert("✅ নম্বরটি কপি হয়েছে (সেন্ড মানি করার জন্য): " + numText);
+        alert("✅ নম্বরটি কপি হয়েছে: " + numText);
     }).catch(err => {
         alert("কপি করতে সমস্যা হয়েছে!");
     });
@@ -356,8 +348,7 @@ window.processAIRecharge = async function() {
                 time: new Date()
             });
 
-            alert("✅ আপনার রিচার্জ রিকোয়েস্ট সফলভাবে সাবমিট হয়েছে! অ্যাডমিন যাচাই করে শীঘ্রই ব্যালেন্স যুক্ত করে দেবেন।");
-            
+            alert("✅ রিচার্জ রিকোয়েস্ট সাবমিট হয়েছে!");
             if(customAmtElem) customAmtElem.value = "";
             if(trxElem) trxElem.value = "";
             window.showPage('dashboardPage');
@@ -365,7 +356,7 @@ window.processAIRecharge = async function() {
             alert("রিচার্জ রিকোয়েস্ট পাঠাতে সমস্যা হয়েছে: " + error.message);
         }
     } else {
-        alert("দয়া করে সঠিক টাকার পরিমাণ এবং ট্রানজ্যাকশন আইডি (TrxID) দিন!");
+        alert("দয়া করে সঠিক টাকার পরিমাণ এবং TrxID দিন!");
     }
 }
 
@@ -374,11 +365,11 @@ window.loadAdminRequests = async function() {
     if (!requestContainer) return;
 
     if (currentUserEmail !== ADMIN_EMAIL) {
-        requestContainer.innerHTML = "<p style='color: red; font-weight: bold; text-align: center; padding: 20px;'>⛔ আপনার এই পেজে প্রবেশ করার কোনো অনুমতি নেই! এটি শুধুমাত্র অ্যাডমিনের জন্য।</p>";
+        requestContainer.innerHTML = "<p style='color: red; font-weight: bold; text-align: center; padding: 20px;'>⛔ আপনার এই পেজে প্রবেশ করার অনুমতি নেই!</p>";
         return;
     }
 
-    requestContainer.innerHTML = "রিকোয়েস্ট লোড হচ্ছে...";
+    requestContainer.innerHTML = "লোড হচ্ছে...";
 
     try {
         const querySnapshot = await getDocs(collection(db, "recharge_requests"));
@@ -390,12 +381,12 @@ window.loadAdminRequests = async function() {
 
             if (req.status === "Pending") {
                 html += `
-                    <div style="background: #fff; border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="background: #fff; border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 8px;">
                         <p style="margin: 0 0 5px 0;"><b>ইউজার:</b> ${req.email}</p>
                         <p style="margin: 0 0 5px 0;"><b>টাকা:</b> ৳${req.amount}</p>
                         <p style="margin: 0 0 8px 0;"><b>TrxID:</b> <span style="color: #e74c3c; font-weight: bold;">${req.trxId}</span></p>
                         <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; width: auto; background-color: #27ae60;" onclick="approveRechargeFromAdmin('${req.userId}', ${req.amount}, '${reqId}')">
-                            ✅ এক ক্লিকে টাকা যোগ করুন
+                            ✅ টাকা যোগ করুন
                         </button>
                     </div>
                 `;
@@ -403,7 +394,7 @@ window.loadAdminRequests = async function() {
         });
 
         if (html === "") {
-            requestContainer.innerHTML = "<p style='text-align: center; color: #666;'>কোনো নতুন রিচার্জ রিকোয়েস্ট নেই।</p>";
+            requestContainer.innerHTML = "<p style='text-align: center; color: #666;'>কোনো নতুন রিকোয়েস্ট নেই।</p>";
         } else {
             requestContainer.innerHTML = html;
         }
@@ -414,7 +405,7 @@ window.loadAdminRequests = async function() {
 
 window.approveRechargeFromAdmin = async function(userId, rechargeAmount, requestId) {
     if (currentUserEmail !== ADMIN_EMAIL) {
-        alert("⛔ আপনার এই কাজটি করার কোনো অনুমতি নেই!");
+        alert("⛔ অনুমতি নেই!");
         return;
     }
 
@@ -428,38 +419,15 @@ window.approveRechargeFromAdmin = async function(userId, rechargeAmount, request
         
         let newBalance = currentBal + parseFloat(rechargeAmount);
 
-        await setDoc(userRef, {
-            balance: newBalance
-        }, { merge: true });
+        await setDoc(userRef, { balance: newBalance }, { merge: true });
 
         const requestRef = doc(db, "recharge_requests", requestId);
-        await updateDoc(requestRef, {
-            status: "Approved"
-        });
+        await updateDoc(requestRef, { status: "Approved" });
 
-        alert("✅ সফল! ইউজারের অ্যাকাউন্টে এক ক্লিকেই টাকা যোগ হয়ে গেছে।");
+        alert("✅ সফল! টাকা যোগ হয়ে গেছে।");
         window.loadAdminRequests();
     } catch (error) {
-        alert("টাকা যোগ করতে সমস্যা হয়েছে: " + error.message);
+        alert("সমস্যা হয়েছে: " + error.message);
     }
-    }
-        
-// ফাংশনগুলোকে গ্লোবাল উইন্ডো স্কোপে বাইন্ড করা
-window.registerUser = registerUser;
-window.loginUser = loginUser;
-window.logoutUser = logoutUser;
-window.showPage = showPage;
-window.toggleMenu = toggleMenu;
-window.closeMenu = closeMenu;
-window.pressKey = pressKey;
-window.deleteDigit = deleteDigit;
-window.clearScreen = window.clearScreen;
-window.makeCall = makeCall;
-window.endCall = endCall;
-window.saveContact = saveContact;
-window.dialContact = dialContact;
-window.copyNumber = copyNumber;
-window.setAmount = setAmount;
-window.processAIRecharge = processAIRecharge;
-window.loadAdminRequests = loadAdminRequests;
-window.approveRechargeFromAdmin = approveRechargeFromAdmin;
+        }
+            
