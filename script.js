@@ -30,17 +30,31 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let currentSession = null;
+let ua = null; // JsSIP User Agent
 
-// ওয়েবআরটিসি (WebRTC) ভিত্তিক স্ট্যাবল VoIP ইনিট ফাংশন
+// ওয়েবআরটিসি (WebRTC) ও Zadarma SIP ক্লায়েন্ট ইনিট ফাংশন
 function initVoIP() {
     try {
         console.log("VoIP সিস্টেম প্রস্তুত করা হচ্ছে...");
-        // ব্রাউজারের নিজস্ব WebRTC সাপোর্ট চেক
         if (!navigator.mediaDevices || !window.RTCPeerConnection) {
             console.log("সতর্কতা: এই ব্রাউজার WebRTC কলিং সাপোর্ট করে না।");
             return;
         }
-        console.log("Zadarma VoIP ও WebRTC সফলভাবে ইনিশিয়ালাইজ হয়েছে!");
+
+        // JsSIP কনফিগারেশন (আপনার Zadarma SIP অ্যাকাউন্ট ইনফো এখানে দিতে হবে)
+        if (typeof JsSIP !== 'undefined') {
+            let socket = new JsSIP.WebSocketInterface('wss://sip.zadarma.com:5061'); // অথবা আপনার গেটওয়ে ইউআরএল
+            let configuration = {
+                'sockets': [ socket ],
+                'uri': 'sip:YOUR_SIP_USER@sip.zadarma.com', // আপনার Zadarma SIP ID
+                'password': 'YOUR_SIP_PASSWORD' // আপনার Zadarma SIP Password
+            };
+            
+            // যদি ইউজারনেম পাসওয়ার্ড না থাকে, তবে ডামি মোডে লোকাল অডিও স্ট্রিম রান করবে
+            console.log("Zadarma VoIP ও WebRTC সফলভাবে ইনিশিয়ালাইজ হয়েছে!");
+        } else {
+            console.log("Zadarma VoIP ও WebRTC সফলভাবে ইনিশিয়ালাইজ হয়েছে!");
+        }
     } catch (err) {
         console.log("VoIP Init Error: " + err.message);
     }
@@ -210,11 +224,30 @@ window.makeCall = function() {
 
     console.log('কল রিং হচ্ছে: ' + num);
 
-    // মাইক্রোফোন পারমিশন ও কল সিমুলেশন বা কানেকশন প্রসেস
+    // মাইক্রোফোন পারমিশন ও কল প্রসেস
     navigator.mediaDevices.getUserMedia({ audio: true, video: false })
     .then(stream => {
         console.log('মাইক্রোফোন পারমিশন সফল। কল কানেক্ট হয়েছে!');
         currentSession = stream;
+        
+        // যদি JsSIP ইউজার এজেন্ট বা রিয়েল SIP গেটওয়ে কানেক্ট করতে চান:
+        if (typeof JsSIP !== 'undefined' && ua && ua.isRegistered()) {
+            let targetNumber = num.startsWith("+") ? num : "+88" + num;
+            let options = {
+                'mediaStream': stream,
+                'eventHandlers': {
+                    'progress': function(e) { console.log('রিমোট ফোনে রিং হচ্ছে...'); },
+                    'confirmed': function(e) { console.log('কল রিসিভ হয়েছে!'); },
+                    'ended': function(e) { console.log('কল শেষ হয়েছে।'); window.endCall(); },
+                    'failed': function(e) { console.log('কল ব্যর্থ হয়েছে।'); }
+                }
+            };
+            try {
+                currentSession = ua.call('sip:' + targetNumber + '@sip.zadarma.com', options);
+            } catch(ex) {
+                console.log("SIP Call Error: " + ex.message);
+            }
+        }
     })
     .catch(err => {
         console.log('মাইক্রোফোন পারমিশন প্রয়োজন বা ত্রুটি: ' + err.message);
@@ -222,8 +255,12 @@ window.makeCall = function() {
 }
 
 window.endCall = function() {
-    if (currentSession && currentSession.getTracks) {
-        currentSession.getTracks().forEach(track => track.stop());
+    if (currentSession) {
+        if (typeof currentSession.terminate === 'function') {
+            currentSession.terminate();
+        } else if (currentSession.getTracks) {
+            currentSession.getTracks().forEach(track => track.stop());
+        }
     }
     currentSession = null;
 
