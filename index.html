@@ -3,58 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RKC VoIP - কলিং প্ল্যাটফর্ম</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .main-container { width: 360px; background: #ffffff; padding: 25px; border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-        .page { display: none; }
-        .page.active { display: block; }
-        .brand-header { text-align: center; margin-bottom: 15px; }
-        .brand-header h1 { color: #2c3e50; font-size: 20px; font-weight: bold; }
-        .brand-header span { color: #2ecc71; }
-        .logo-area { text-align: center; margin-bottom: 15px; }
-        .logo-area h2 { color: #2c3e50; font-size: 22px; margin-bottom: 5px; }
-        .logo-area p { color: #7f8c8d; font-size: 14px; }
-        .bonus-badge { background: #fff3cd; color: #856404; border: 1px dashed #ffeeba; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: bold; margin-bottom: 20px; text-align: center; }
-        .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; font-size: 14px; color: #34495e; margin-bottom: 6px; font-weight: 600; }
-        .input-box { width: 100%; padding: 12px; font-size: 16px; border: 2px solid #e1e8ed; border-radius: 10px; outline: none; text-align: center; }
-        .input-box:focus { border-color: #2ecc71; }
-        .btn { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; color: white; }
-        .btn-primary { background: #2ecc71; }
-        .btn-verify { background: #3498db; }
-        .btn-danger { background: #e74c3c; }
-        .btn-secondary { background: #95a5a6; font-size: 14px; padding: 8px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .user-phone { font-size: 13px; color: #666; }
-        .balance-box { font-size: 13px; font-weight: bold; color: #27ae60; background: #e8f8f0; padding: 5px 10px; border-radius: 20px; cursor: pointer; }
-        .nav-menu { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .menu-link { font-size: 13px; color: #3498db; cursor: pointer; font-weight: bold; text-decoration: underline; }
-        .screen-box { position: relative; margin-bottom: 15px; }
-        .screen { width: 100%; height: 50px; font-size: 24px; text-align: left; padding: 10px 45px 10px 15px; border: 2px solid #ddd; border-radius: 10px; background: #fafafa; letter-spacing: 2px; direction: ltr; }
-        .backspace-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 22px; color: #e74c3c; cursor: pointer; }
-        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; justify-items: center; }
-        .key-btn { height: 55px; width: 55px; font-size: 20px; font-weight: bold; background: #f8f9fa; border: 1px solid #e1e4e8; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; }
-        .key-btn:hover { background: #e2e6ea; }
-        .zero-btn { grid-column: 2; }
-        .call-container { margin-top: 12px; display: flex; justify-content: center; }
-        .call-btn { background: #2ecc71; color: white; width: 65px; height: 65px; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4); }
-        .calling-screen { text-align: center; padding: 30px 0; }
-        .calling-screen h3 { color: #2c3e50; margin-bottom: 10px; }
-        .calling-screen p { font-size: 20px; color: #27ae60; font-weight: bold; margin-bottom: 30px; }
-        .history-box { max-height: 220px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #eee; border-radius: 8px; padding: 8px; background: #fafafa; }
-        .history-item { font-size: 13px; padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; color: #444; }
-        .recharge-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .current-balance { background: #e8f8f0; padding: 12px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
-        .current-balance h2 { color: #27ae60; font-size: 22px; }
-        .amount-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
-        .amount-btn { padding: 10px; font-size: 14px; font-weight: bold; background: #f8f9fa; border: 2px solid #e1e4e8; border-radius: 8px; cursor: pointer; text-align: center; }
-        .payment-methods { display: flex; gap: 10px; margin-bottom: 15px; }
-        .pay-option { flex: 1; padding: 10px; border: 2px solid #e1e4e8; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; font-size: 13px; }
-        .pay-option.bkash { color: #e2136e; }
-        .pay-option.nagad { color: #f37021; }
-    </style>
+    <title>RKC VoIP - প্রফেশনাল কলিং প্ল্যাটফর্ম</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -87,18 +37,22 @@
         <!-- পেজ ২: ডায়ালপ্যাড ড্যাশবোর্ড পেজ -->
         <div id="dashboardPage" class="page">
             <div class="header">
-                <div class="user-phone" id="displayPhone">ইউজার: লোড হচ্ছে...</div>
                 <div class="balance-box" onclick="showPage('rechargePage')" title="রিচার্জ করতে ক্লিক করুন">ব্যালেন্স: <span id="userBalance">৳ 0.00</span> ➕</div>
-            </div>
+                
+                <div class="menu-icon" onclick="toggleMenu(event)">☰</div>
 
-            <div class="nav-menu">
-                <span class="menu-link" onclick="showPage('callHistoryPage')">📋 কল হিস্ট্রি</span>
-                <span class="menu-link" onclick="logoutUser()" style="color: #e74c3c;">🚪 লগআউট</span>
+                <div id="settingsMenu" class="dropdown-menu">
+                    <div class="menu-user-info" id="menuUserEmail">ID: Loading...</div>
+                    <div class="menu-item" onclick="showPage('callHistoryPage'); closeMenu()">📋 কল হিস্ট্রি</div>
+                    <!-- অ্যাডমিন প্যানেল মেনু অপশন (এটি সবার জন্য দেখাবে, কিন্তু ক্লিক করলে শুধু আপনার জিমেইল দিয়েই খুলবে) -->
+                    <div class="menu-item" onclick="showPage('adminPage'); closeMenu()" style="color: #e74c3c; font-weight: bold;">⚙️ অ্যাডমিন প্যানেল</div>
+                    <div class="menu-item logout" onclick="logoutUser()">🚪 লগআউট</div>
+                </div>
             </div>
 
             <div class="screen-box">
                 <input type="text" id="dialScreen" class="screen" placeholder="017xxxxxxxx" readonly>
-                <button class="backspace-btn" onclick="deleteDigit()">⌫</button>
+                <button class="backspace-btn-inside" onclick="deleteDigit()">⌫</button>
             </div>
 
             <div class="keypad">
@@ -114,12 +68,14 @@
                 <button class="key-btn zero-btn" onclick="pressKey('0')">0</button>
             </div>
 
-            <div class="call-container">
+            <div class="call-action-bar">
+                <button class="action-side-btn" onclick="showPage('contactsPage')" title="কন্টাক্ট লিস্ট">📇</button>
                 <button class="call-btn" onclick="makeCall()">📞</button>
+                <button class="action-side-btn" onclick="clearScreen()" title="সব মুছুন">🗑️</button>
             </div>
         </div>
 
-        <!-- পেজ ৩: কলিং স্ক্রিন অ্যানিমেশন পেজ -->
+        <!-- পেজ ৩: কলিং স্ক্রিন পেজ -->
         <div id="callingPage" class="page">
             <div class="calling-screen">
                 <h3>কল হচ্ছে...</h3>
@@ -129,11 +85,28 @@
             </div>
         </div>
 
-        <!-- পেজ ৪: কল হিস্ট্রি পেজ -->
+        <!-- পেজ ৪: কন্টাক্ট লিস্ট পেজ -->
+        <div id="contactsPage" class="page">
+            <div class="recharge-header">
+                <h3>কন্টাক্ট সেভ করুন</h3>
+                <span class="menu-link" onclick="showPage('dashboardPage')" style="color:#3498db; cursor:pointer; font-size:13px; font-weight:bold;">← ড্যাশবোর্ড</span>
+            </div>
+            <input type="text" id="contactName" class="input-box" placeholder="নাম (যেমন: আব্বা)" style="margin-bottom: 8px; font-size: 14px;">
+            <input type="text" id="contactPhone" class="input-box" placeholder="নম্বর (017xxxxxxxx)" style="margin-bottom: 8px; font-size: 14px;">
+            <input type="text" id="contactPhoto" class="input-box" placeholder="প্রোফাইল ছবির লিংক (ঐচ্ছিক)" style="margin-bottom: 10px; font-size: 14px;">
+            <button class="btn btn-primary" onclick="saveContact()" style="margin-top: 0; margin-bottom: 12px; padding: 8px;">কন্টাক্ট সেভ করুন</button>
+
+            <div class="contact-list-box" id="contactListUI">
+                <div class="history-item" style="color: #888; justify-content: center;">কোনো কন্টাক্ট সেভ করা নেই</div>
+            </div>
+            <button class="btn btn-secondary" onclick="showPage('dashboardPage')">ফিরে যান</button>
+        </div>
+
+        <!-- পেজ ৫: কল হিস্ট্রি পেজ -->
         <div id="callHistoryPage" class="page">
             <div class="recharge-header">
                 <h3>কল হিস্ট্রি</h3>
-                <span class="menu-link" onclick="showPage('dashboardPage')">← ড্যাশবোর্ড</span>
+                <span class="menu-link" onclick="showPage('dashboardPage')" style="color:#3498db; cursor:pointer; font-size:13px; font-weight:bold;">← ড্যাশবোর্ড</span>
             </div>
             <div class="history-box" id="callHistoryList">
                 <div class="history-item" style="color: #888; justify-content: center;">কোনো কল রেকর্ড নেই</div>
@@ -141,16 +114,27 @@
             <button class="btn btn-secondary" onclick="showPage('dashboardPage')">ফিরে যান</button>
         </div>
 
-        <!-- পেজ ৫: রিচার্জ পেজ -->
+        <!-- পেজ ৬: রিচার্জ পেজ -->
         <div id="rechargePage" class="page">
             <div class="recharge-header">
                 <h3>ব্যালেন্স রিচার্জ</h3>
-                <span class="menu-link" onclick="showPage('dashboardPage')">← ড্যাশবোর্ড</span>
+                <span class="menu-link" onclick="showPage('dashboardPage')" style="color:#3498db; cursor:pointer; font-size:13px; font-weight:bold;">← ড্যাশবোর্ড</span>
             </div>
 
             <div class="current-balance">
                 <span>বর্তমান ব্যালেন্স</span>
                 <h2 id="rechargeBalanceDisplay">৳ 0.00</h2>
+            </div>
+
+            <div class="payment-info-box">
+                <p style="color: #e2136e;">
+                    <span>📌 বিকাশ <small class="send-money-tag">(সেন্ড মানি)</small>: <strong id="num1">01753779200</strong></span>
+                    <button class="copy-btn" onclick="copyNumber('num1')">📋 কপি</button>
+                </p>
+                <p style="color: #27ae60; margin-bottom: 0;">
+                    <span>📌 নগদ <small class="send-money-tag">(সেন্ড মানি)</small>: <strong id="num2">01795624217</strong></span>
+                    <button class="copy-db" onclick="copyNumber('num2')">📋 কপি</button>
+                </p>
             </div>
 
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #34495e;">পরিমাণ সিলেক্ট করুন:</div>
@@ -163,181 +147,28 @@
                 <button class="amount-btn" onclick="setAmount(2000)">৳ ২০০০</button>
             </div>
 
-            <input type="number" id="customAmount" class="input-box" placeholder="অন্য পরিমাণ (টাকা)" style="margin-bottom: 15px;">
+            <input type="number" id="customAmount" class="input-box" placeholder="টাকার পরিমাণ লিখুন" style="margin-bottom: 10px;">
+            <input type="text" id="trxIdInput" class="input-box" placeholder="TrxID (যেমন: 9N7A...)" style="margin-bottom: 15px; font-size: 14px;">
 
-            <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #34495e;">পেমেন্ট মাধ্যম:</div>
-            <div class="payment-methods">
-                <div class="pay-option bkash" onclick="alert('বিকাশ গেটওয়ে সিলেক্টেড')">বিকাশ</div>
-                <div class="pay-option nagad" onclick="alert('নগদ গেটওয়ে সিলেক্টেড')">নগদ</div>
+            <button class="btn btn-primary" onclick="processAIRecharge()">🤖 এআই অটো রিচার্জ সাবমিট করুন</button>
+        </div>
+
+        <!-- পেজ ৭: অ্যাডমিন প্যানেল পেজ (শুধুমাত্র আপনার জন্য সুরক্ষিত) -->
+        <div id="adminPage" class="page">
+            <div class="recharge-header">
+                <h3>অ্যাডমিন প্যানেল - রিচার্জ রিকোয়েস্ট</h3>
+                <span class="menu-link" onclick="showPage('dashboardPage')" style="color:#3498db; cursor:pointer; font-size:13px; font-weight:bold;">← ড্যাশবোর্ড</span>
+            </div>
+            
+            <div id="adminRequestList" style="margin-top: 15px;">
+                <!-- রিকোয়েস্টগুলো এখানে অটোমেটিক লোড হবে -->
+                লোড হচ্ছে...
             </div>
 
-            <button class="btn btn-primary" onclick="processRecharge()">রিচার্জ সম্পন্ন করুন</button>
+            <button class="btn btn-secondary" onclick="showPage('dashboardPage')" style="margin-top: 15px;">ড্যাশবোর্ডে ফিরে যান</button>
         </div>
     </div>
 
-    <!-- ফায়ারবেস স্ক্রিপ্ট এবং লগিক কানেকশন -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBH3RuAfTRim8tPpNZ6tOUv2JuyrSQFQyY",
-            authDomain: "rkc-voip.firebaseapp.com",
-            projectId: "rkc-voip",
-            storageBucket: "rkc-voip.firebasestorage.app",
-            messagingSenderId: "160684406510",
-            appId: "1:160684406510:web:6e22f5f26a0829b1c025ff",
-            measurementId: "G-C4GW1K6MJK"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let activeCallNumber = "";
-        let currentUserId = null;
-        let callLogs = [];
-
-        window.showPage = function(pageId) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-        }
-
-        window.registerUser = async function() {
-            let email = document.getElementById("emailInput").value.trim();
-            let password = document.getElementById("passwordInput").value;
-            let errorTag = document.getElementById("authError");
-            errorTag.innerText = "";
-
-            if(!email || !password) {
-                errorTag.innerText = "দয়া করে জিমেইল এবং পাসওয়ার্ড দিন!";
-                return;
-            }
-            if(password.length < 6) {
-                errorTag.innerText = "পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে!";
-                return;
-            }
-
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                await setDoc(doc(db, "users", user.uid), {
-                    email: email,
-                    balance: 1.00,
-                    createdAt: new Date()
-                });
-
-                alert("✅ রেজিস্ট্রেশন সফল হয়েছে এবং ১ টাকা ফ্রি যুক্ত হয়েছে!");
-            } catch (error) {
-                errorTag.innerText = "ত্রুটি: " + error.message;
-            }
-        }
-
-        window.loginUser = async function() {
-            let email = document.getElementById("emailInput").value.trim();
-            let password = document.getElementById("passwordInput").value;
-            let errorTag = document.getElementById("authError");
-            errorTag.innerText = "";
-
-            if(!email || !password) {
-                errorTag.innerText = "দয়া করে জিমেইল এবং পাসওয়ার্ড দিন!";
-                return;
-            }
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                errorTag.innerText = "লগইন ব্যর্থ: " + error.message;
-            }
-        }
-
-        window.logoutUser = async function() {
-            await signOut(auth);
-        }
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUserId = user.uid;
-                document.getElementById("displayPhone").innerText = "ইউজার: " + user.email;
-                showPage('dashboardPage');
-
-                const docRef = doc(db, "users", user.uid);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    let bal = docSnap.data().balance;
-                    updateBalanceUI(bal);
-                }
-            } else {
-                currentUserId = null;
-                showPage('loginPage');
-            }
-        });
-
-        function updateBalanceUI(amt) {
-            let formatted = "৳ " + amt.toFixed(2);
-            document.getElementById("userBalance").innerText = formatted;
-            document.getElementById("rechargeBalanceDisplay").innerText = formatted;
-        }
-
-        window.pressKey = function(val) { document.getElementById('dialScreen').value += val; }
-        window.deleteDigit = function() {
-            let screen = document.getElementById('dialScreen');
-            screen.value = screen.value.slice(0, -1);
-        }
-        
-        window.makeCall = function() {
-            let num = document.getElementById('dialScreen').value;
-            if(num.length < 11) {
-                alert("সঠিক ১১ ডিজিটের নম্বর লিখুন!");
-            } else {
-                activeCallNumber = num;
-                document.getElementById("callingNumberDisplay").innerText = num;
-                showPage('callingPage');
-            }
-        }
-
-        window.endCall = function() {
-            let timeNow = new Date().toLocaleTimeString();
-            callLogs.unshift(`<div class="history-item"><span>📞 ${activeCallNumber}</span> <span style="color:#888;">${timeNow}</span></div>`);
-            updateCallHistoryUI();
-
-            alert("কল সমাপ্ত হয়েছে।");
-            document.getElementById('dialScreen').value = "";
-            showPage('dashboardPage');
-        }
-
-        function updateCallHistoryUI() {
-            let historyList = document.getElementById("callHistoryList");
-            if(callLogs.length > 0) {
-                historyList.innerHTML = callLogs.join('');
-            }
-        }
-
-        window.setAmount = function(amt) { document.getElementById('customAmount').value = amt; }
-        
-        window.processRecharge = async function() {
-            let amt = parseFloat(document.getElementById('customAmount').value);
-            if(amt > 0 && currentUserId) {
-                const docRef = doc(db, "users", currentUserId);
-                const docSnap = await getDoc(docRef);
-                
-                if(docSnap.exists()) {
-                    let currentBal = docSnap.data().balance;
-                    let newBal = currentBal + amt;
-
-                    await updateDoc(docRef, { balance: newBal });
-                    updateBalanceUI(newBal);
-
-                    alert("সফলভাবে " + amt + " টাকা রিচার্জ সম্পন্ন হয়েছে!");
-                    showPage('dashboardPage');
-                }
-            } else {
-                alert("সঠিক পরিমাণ টাকার অঙ্ক লিখুন!");
-            }
-        }
-    </script>
+    <script type="module" src="script.js"></script>
 </body>
-    </html>
-    
+</html>
