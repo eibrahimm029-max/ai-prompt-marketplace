@@ -43,14 +43,12 @@ function initVoIP() {
 
         // JsSIP কনফিগারেশন (আপনার Zadarma SIP অ্যাকাউন্ট ইনফো এখানে দিতে হবে)
         if (typeof JsSIP !== 'undefined') {
-            let socket = new JsSIP.WebSocketInterface('wss://sip.zadarma.com:5061'); // অথবা আপনার গেটওয়ে ইউআরএল
+            let socket = new JsSIP.WebSocketInterface('wss://sip.zadarma.com:5061');
             let configuration = {
                 'sockets': [ socket ],
-                'uri': 'sip:YOUR_SIP_USER@sip.zadarma.com', // আপনার Zadarma SIP ID
-                'password': 'YOUR_SIP_PASSWORD' // আপনার Zadarma SIP Password
+                'uri': 'sip:YOUR_SIP_USER@sip.zadarma.com',
+                'password': 'YOUR_SIP_PASSWORD'
             };
-            
-            // যদি ইউজারনেম পাসওয়ার্ড না থাকে, তবে ডামি মোডে লোকাল অডিও স্ট্রিম রান করবে
             console.log("Zadarma VoIP ও WebRTC সফলভাবে ইনিশিয়ালাইজ হয়েছে!");
         } else {
             console.log("Zadarma VoIP ও WebRTC সফলভাবে ইনিশিয়ালাইজ হয়েছে!");
@@ -217,12 +215,15 @@ window.makeCall = function() {
         return;
     }
     
-    activeCallNumber = num;
+    // স্বয়ংক্রিয়ভাবে কান্ট্রি কোড (+88) যুক্ত করা
+    let formattedNumber = num.startsWith("+") ? num : (num.startsWith("88") ? "+" + num : "+88" + num);
+
+    activeCallNumber = formattedNumber;
     let numDisplay = document.getElementById("callingNumberDisplay");
-    if(numDisplay) numDisplay.innerText = num;
+    if(numDisplay) numDisplay.innerText = formattedNumber;
     window.showPage('callingPage');
 
-    console.log('কল রিং হচ্ছে: ' + num);
+    console.log('কল রিং হচ্ছে: ' + formattedNumber);
 
     // মাইক্রোফোন পারমিশন ও কল প্রসেস
     navigator.mediaDevices.getUserMedia({ audio: true, video: false })
@@ -230,9 +231,7 @@ window.makeCall = function() {
         console.log('মাইক্রোফোন পারমিশন সফল। কল কানেক্ট হয়েছে!');
         currentSession = stream;
         
-        // যদি JsSIP ইউজার এজেন্ট বা রিয়েল SIP গেটওয়ে কানেক্ট করতে চান:
         if (typeof JsSIP !== 'undefined' && ua && ua.isRegistered()) {
-            let targetNumber = num.startsWith("+") ? num : "+88" + num;
             let options = {
                 'mediaStream': stream,
                 'eventHandlers': {
@@ -243,7 +242,7 @@ window.makeCall = function() {
                 }
             };
             try {
-                currentSession = ua.call('sip:' + targetNumber + '@sip.zadarma.com', options);
+                currentSession = ua.call('sip:' + formattedNumber + '@sip.zadarma.com', options);
             } catch(ex) {
                 console.log("SIP Call Error: " + ex.message);
             }
