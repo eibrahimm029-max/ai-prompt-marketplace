@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, onSnapshot, updateDelete, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBH3RuAfTRim8tPpNZ6tOUv2JuyrSQFQyY",
@@ -20,7 +20,9 @@ let currentUserId = null;
 let currentUserEmail = "";
 let currentVirtualNumber = "";
 let activeCallNumber = "";
+let currentCallDocId = null;
 let localStream = null;
+let callListenerUnsubscribe = null;
 let savedContacts = [];
 
 const ADMIN_EMAIL = "eibrahimm028q@gmail.com";
@@ -130,6 +132,7 @@ window.logoutUser = async function() {
     if (currentUserId) {
         await setDoc(doc(db, "users", currentUserId), { status: "offline" }, { merge: true });
     }
+    if (callListenerUnsubscribe) callListenerUnsubscribe();
     await signOut(auth);
     window.showPage('loginPage');
 }
@@ -152,10 +155,13 @@ onAuthStateChanged(auth, async (user) => {
                 let vNumElem = document.getElementById("myVirtualNumber");
                 if(vNumElem) vNumElem.innerText = currentVirtualNumber;
                 
-                let emailElem = document.getElementById("menuUserEmail");
+                let emailElem = document.getElementById("menuUserInfo"); // Fixed ID mapping
                 if(emailElem) emailElem.innerText = `ID: ${user.email}`;
                 
                 await setDoc(docRef, { status: "online" }, { merge: true });
+
+                // ইনস্ট্যান্ট ইনকামিং কল শোনার জন্য রিয়েল-টাইম লিসেনার চালু করা হলো
+                listenForIncomingCalls(currentVirtualNumber);
             }
         } catch (e) {
             console.log("User data fetch error:", e);
@@ -163,12 +169,62 @@ onAuthStateChanged(auth, async (user) => {
 
         window.showPage('dashboardPage');
     } else {
+        if (callListenerUnsubscribe) callListenerUnsubscribe();
         currentUserId = null;
         currentUserEmail = "";
         currentVirtualNumber = "";
         window.showPage('loginPage');
     }
 });
+
+// ১ সেকেন্ডের কম সময়ে কল রিসিভ করার সিগন্যালিং লিসেনার
+function listenForIncomingCalls(myNumber) {
+    if (callListenerUnsubscribe) callListenerUnsubscribe();
+
+    const q = query(
+        collection(db, "active_calls"), 
+        where("receiverNumber", "==", myNumber),
+        where("status", "==", "ringing")
+    );
+
+    callListenerUnsubscribe = onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+                let callData = change.doc.data();
+                currentCallDocId = change.doc.id;
+                
+                // ইনকামিং কলের পপ-আপ বা স্ক্রিন দেখানো
+                showIncomingCallAlert(callData.callerNumber);
+            }
+        });
+    });
+}
+
+function showIncomingCallAlert(callerNum) {
+    let confirmCall = confirm(`📞 ${callerNum} থেকে একটি কল এসেছে। রিসিভ করতে চান?`);
+    if (confirmCall) {
+        window.acceptCall();
+    } else {
+        window.rejectIncomingCall();
+    }
+}
+
+window.acceptCall = async function() {
+    if (currentCallDocId) {
+        await updateDoc(doc(db, "active_calls", currentCallDocId), { status: "connected" });
+    }
+    window.showPage('callingPage');
+    let numDisplay = document.getElementById("callingNumberDisplay");
+    if(numDisplay) numDisplay.innerText = "কল কানেক্টেড!";
+}
+
+window.rejectIncomingCall = async function() {
+    if (currentCallDocId) {
+        await updateDoc(doc(db, "active_calls", currentCallDocId), { status: "rejected" });
+        currentCallDocId = null;
+    }
+    window.showPage('dashboardPage');
+}
 
 window.pressKey = function(val) { 
     let screen = document.getElementById('dialScreen');
@@ -185,6 +241,7 @@ window.clearScreen = function() {
     if(screen) screen.value = "";
 }
 
+// আউটগোয়িং কল করার লজিক (তাৎক্ষণিক ফায়ারবেসে রিকোয়েস্ট পাঠানো)
 window.makeCall = async function() {
     let screen = document.getElementById('dialScreen');
     let targetNumber = screen ? screen.value.trim() : "";
@@ -207,6 +264,16 @@ window.makeCall = async function() {
     try {
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         
+        // ফায়ারবেসে রিংইং স্টেটাস পাঠানো যাতে ১ সেকেন্ডের ভেতর অপর প্রান্তের ফোনে পপআপ আসে
+        const callDocRef = await addDoc(collection(db, "active_calls"), {
+            callerNumber: currentVirtualNumber,
+            receiverNumber: targetNumber,
+            status: "ringing",
+            time: new Date()
+        });
+        currentCallDocId = callDocRef.id;
+
+        // স্থায়ী কল হিস্ট্রি সেভ করা
         if(currentUserId) {
             await addDoc(collection(db, "call_logs"), {
                 userId: currentUserId,
@@ -220,7 +287,14 @@ window.makeCall = async function() {
     }
 }
 
-window.endCall = function() {
+window.endCall = async function() {
+    if (currentCallDocId) {
+        try {
+            await updateDoc(doc(db, "active_calls", currentCallDocId), { status: "ended" });
+        } catch(e) {}
+        currentCallDocId = null;
+    }
+
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
         localStream = null;
