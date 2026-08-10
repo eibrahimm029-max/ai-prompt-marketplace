@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBH3RuAfTRim8tPpNZ6tOUv2JuyrSQFQyY",
@@ -15,6 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const messaging = getMessaging(app);
 
 let currentMobileNumber = "";
 let currentUserId = null;
@@ -23,12 +25,32 @@ let localStream = null;
 let callListenerUnsubscribe = null;
 let savedContacts = [];
 
-const ADMIN_EMAIL = "01800000000@rkcvoip.com"; // এডমিন নম্বর ভিত্তিক
+const ADMIN_EMAIL = "01800000000@rkcvoip.com"; 
+const VAPID_KEY = "BLVaDwyGoiw9O2j1zLJm-egx5rg32xabUFZxFekpOSRm3aj2PdePjHGVWdV9Bq7_r2gAwnWQc6I5KeKKV52L9a0";
 
 // ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর চেক করার রেগুলার এক্সপ্রেশন
 function isValidBDMobile(number) {
     const bdRegex = /^01[3-9]\d{8}$/;
     return bdRegex.test(number);
+}
+
+// পুশ নোটিফিকেশন পারমিশন এবং টোকেন নেওয়ার ফাংশন
+async function requestNotificationPermission(userId) {
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+            if (token && userId) {
+                // ফায়ারস্টোরে ইউজারের ডকুমেন্টে FCM টোকেন সেভ করে রাখা
+                await setDoc(doc(db, "users", userId), { fcmToken: token }, { merge: true });
+                console.log("FCM Token saved successfully.");
+            }
+        } else {
+            console.log("Notification permission denied.");
+        }
+    } catch (error) {
+        console.error("Error getting notification token:", error);
+    }
 }
 
 // পেজ পরিবর্তন করার ফাংশন
@@ -73,7 +95,7 @@ window.onclick = function(event) {
 
 // ১১ ডিজিটের মোবাইল নম্বর দিয়ে রেজিস্ট্রেশন
 window.registerUser = async function() {
-    let phoneInput = document.getElementById("emailInput"); // HTML-এর emailInput আইডি ব্যবহার করা হয়েছে
+    let phoneInput = document.getElementById("emailInput"); 
     let passwordInput = document.getElementById("passwordInput");
     let errorTag = document.getElementById("authError");
     
@@ -163,6 +185,9 @@ onAuthStateChanged(auth, async (user) => {
                 
                 await setDoc(docRef, { status: "online" }, { merge: true });
 
+                // নোটিফিকেশন পারমিশন এবং টোকেন রিকোয়েস্ট করা
+                await requestNotificationPermission(user.uid);
+
                 // ইনস্ট্যান্ট কল শোনার জন্য রিয়েল-টাইম লিসেনার চালু করা
                 listenForIncomingCalls(currentMobileNumber);
             }
@@ -248,7 +273,7 @@ window.makeCall = async function() {
     let targetNumber = screen ? screen.value.trim() : "";
     
     if(!isValidBDMobile(targetNumber)) {
-        alert("দয়া করে সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর ডায়াল করুন! (যেমন: 01712345678)");
+        alert("দয়া করে সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর ডায়াল করুন! যেমন: 01712345678");
         return;
     }
 
@@ -361,5 +386,5 @@ window.loadAdminRequests = async function() {
     let requestContainer = document.getElementById("adminRequestList");
     if (!requestContainer) return;
     requestContainer.innerHTML = "<p style='text-align: center;'>কোনো নতুন রিকোয়েস্ট নেই।</p>";
-                }
-        
+    }
+    
