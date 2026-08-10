@@ -1,19 +1,6 @@
-// মোবাইল স্ক্রিনেই কনসোল দেখার ফাংশন
-(function () {
-    let oldLog = console.log;
-    console.log = function (message) {
-        oldLog.apply(console, arguments);
-        let box = document.getElementById("debugLogBox");
-        if (box) {
-            box.innerHTML += "&gt; " + message + "<br>";
-            box.scrollTop = box.scrollHeight;
-        }
-    };
-})();
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBH3RuAfTRim8tPpNZ6tOUv2JuyrSQFQyY",
@@ -29,55 +16,21 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let currentSession = null;
-let ua = null; // JsSIP User Agent
-
-// ওয়েবআরটিসি (WebRTC) ও Zadarma SIP ক্লায়েন্ট ইনিট ফাংশন (রিয়েল ক্রেডেনশিয়াল যুক্ত করা হয়েছে)
-function initVoIP() {
-    try {
-        console.log("VoIP সিস্টেম প্রস্তুত করা হচ্ছে...");
-        if (!navigator.mediaDevices || !window.RTCPeerConnection) {
-            console.log("সতর্কতা: এই ব্রাউজার WebRTC কলিং সাপোর্ট করে না।");
-            return;
-        }
-
-        // Zadarma SIP অ্যাকাউন্ট ইনফো দিয়ে কনফিগার করা হলো
-        if (typeof JsSIP !== 'undefined') {
-            let socket = new JsSIP.WebSocketInterface('wss://sip.zadarma.com:5061');
-            let configuration = {
-                'sockets': [ socket ],
-                'uri': 'sip:584336-104@sip.zadarma.com',
-                'password': 'v1pj47bnTM',
-                'register': true
-            };
-            
-            ua = new JsSIP.UA(configuration);
-
-            ua.on('registered', function(e) {
-                console.log("✅ Zadarma SIP সার্ভারে সফলভাবে রেজিস্টার্ড হয়েছে!");
-            });
-
-            ua.on('registrationFailed', function(e) {
-                console.log("❌ SIP রেজিস্ট্রেশন ব্যর্থ: " + e.cause);
-            });
-
-            ua.start();
-        } else {
-            console.log("Zadarma VoIP ও WebRTC সফলভাবে ইনিশিয়ালাইজ হয়েছে!");
-        }
-    } catch (err) {
-        console.log("VoIP Init Error: " + err.message);
-    }
-}
-
-let activeCallNumber = "";
 let currentUserId = null;
 let currentUserEmail = "";
+let currentVirtualNumber = "";
+let localStream = null;
+let peerConnection = null;
 let callLogs = [];
 let savedContacts = [];
 let currentBalanceValue = 0;
 
 const ADMIN_EMAIL = "eibrahimm028q@gmail.com";
+
+// STUN সার্ভার WebRTC পিয়ার কানেকশনের জন্য
+const rtcConfig = {
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+};
 
 window.showPage = function(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -109,6 +62,12 @@ window.onclick = function(event) {
     }
 }
 
+// ইউনিক ভার্চুয়াল নাম্বার তৈরি করার ফাংশন (যেমন: 1001, 1002...)
+async function generateUniqueVirtualNumber() {
+    let randomNum = Math.floor(1000 + Math.random() * 9000).toString();
+    return randomNum;
+}
+
 window.registerUser = async function() {
     let emailInput = document.getElementById("emailInput");
     let passwordInput = document.getElementById("passwordInput");
@@ -131,13 +90,18 @@ window.registerUser = async function() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
+        // ইউজারের জন্য একটি ইউনিক ভার্চুয়াল নাম্বার তৈরি করা
+        let vNumber = await generateUniqueVirtualNumber();
+
         await setDoc(doc(db, "users", user.uid), {
             email: email,
+            virtualNumber: vNumber,
             balance: 1.00,
+            status: "online",
             createdAt: new Date()
         });
 
-        alert("✅ রেজিস্ট্রেশন সফল হয়েছে এবং ১ টাকা ফ্রি যুক্ত হয়েছে!");
+        alert(`✅ রেজিস্ট্রেশন সফল! আপনার ভার্চুয়াল নম্বর: ${vNumber}`);
     } catch (error) {
         if(errorTag) errorTag.innerText = "ত্রুটি: " + error.message;
     }
@@ -165,6 +129,9 @@ window.loginUser = async function() {
 }
 
 window.logoutUser = async function() {
+    if (currentUserId) {
+        await setDoc(doc(db, "users", currentUserId), { status: "offline" }, { merge: true });
+    }
     await signOut(auth);
     window.showPage('loginPage');
 }
@@ -173,25 +140,30 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUserId = user.uid;
         currentUserEmail = user.email || "";
-        let emailElem = document.getElementById("menuUserEmail");
-        if(emailElem) emailElem.innerText = "ID: " + user.email;
         
-        window.showPage('dashboardPage');
-        initVoIP();
-
         try {
             const docRef = doc(db, "users", user.uid);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
+                currentVirtualNumber = docSnap.data().virtualNumber || "----";
                 currentBalanceValue = parseFloat(docSnap.data().balance) || 0;
                 updateBalanceUI(currentBalanceValue);
+                
+                let emailElem = document.getElementById("menuUserEmail");
+                if(emailElem) emailElem.innerText = `ID: ${user.email}\nআপনার নম্বর: ${currentVirtualNumber}`;
+                
+                // অনলাইন স্ট্যাটাস আপডেট
+                await setDoc(docRef, { status: "online" }, { merge: true });
             }
         } catch (e) {
-            console.log("Balance fetch error:", e);
+            console.log("User data fetch error:", e);
         }
+
+        window.showPage('dashboardPage');
     } else {
         currentUserId = null;
         currentUserEmail = "";
+        currentVirtualNumber = "";
         window.showPage('loginPage');
     }
 });
@@ -219,252 +191,73 @@ window.clearScreen = function() {
     if(screen) screen.value = "";
 }
 
-window.makeCall = function() {
+// নিজস্ব সিস্টেমে কল করার ফাংশন (ভার্চুয়াল নাম্বার দিয়ে)
+window.makeCall = async function() {
     let screen = document.getElementById('dialScreen');
-    let num = screen ? screen.value.trim() : "";
-    if(num.length < 11) {
-        alert("সঠিক ১১ ডিজিটের নম্বর লিখুন!");
+    let targetNumber = screen ? screen.value.trim() : "";
+    
+    if(targetNumber === "") {
+        alert("দয়া করে একটি ভার্চুয়াল নম্বর ডায়াল করুন!");
         return;
     }
-    
-    // স্বয়ংক্রিয়ভাবে কান্ট্রি কোড (+88) যুক্ত করা
-    let formattedNumber = num.startsWith("+") ? num : (num.startsWith("88") ? "+" + num : "+88" + num);
 
-    activeCallNumber = formattedNumber;
+    if(targetNumber === currentVirtualNumber) {
+        alert("আপনি নিজের নম্বরে কল করতে পারবেন না!");
+        return;
+    }
+
     let numDisplay = document.getElementById("callingNumberDisplay");
-    if(numDisplay) numDisplay.innerText = formattedNumber;
+    if(numDisplay) numDisplay.innerText = targetNumber;
     window.showPage('callingPage');
 
-    console.log('কল রিং হচ্ছে: ' + formattedNumber);
+    console.log('কল করা হচ্ছে নম্বরটিতে: ' + targetNumber);
 
-    // মাইক্রোফোন পারমিশন ও কল প্রসেস
-    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-    .then(stream => {
-        console.log('মাইক্রোফোন পারমিশন সফল। কল কানেক্ট হয়েছে!');
-        currentSession = stream;
-        
-        if (typeof JsSIP !== 'undefined' && ua && ua.isRegistered()) {
-            let options = {
-                'mediaStream': stream,
-                'eventHandlers': {
-                    'progress': function(e) { console.log('রিমোট ফোনে রিং হচ্ছে...'); },
-                    'confirmed': function(e) { console.log('কল রিসিভ হয়েছে!'); },
-                    'ended': function(e) { console.log('কল শেষ হয়েছে।'); window.endCall(); },
-                    'failed': function(e) { console.log('কল ব্যর্থ হয়েছে।'); }
-                }
-            };
-            try {
-                currentSession = ua.call('sip:' + formattedNumber + '@sip.zadarma.com', options);
-            } catch(ex) {
-                console.log("SIP Call Error: " + ex.message);
-            }
+    try {
+        // ডাটাবেজ থেকে চেক করা যে এই ভার্চুয়াল নম্বরের কোনো ইউজার আছে কি না
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("virtualNumber", "==", targetNumber));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            alert("দুঃখিত, এই নম্বরের কোনো ব্যবহারকারী পাওয়া যায়নি!");
+            window.endCall();
+            return;
         }
-    })
-    .catch(err => {
-        console.log('মাইক্রোফোন পারমিশন প্রয়োজন বা ত্রুটি: ' + err.message);
-    });
+
+        let receiverData = null;
+        querySnapshot.forEach((doc) => {
+            receiverData = doc.data();
+        });
+
+        if (receiverData.status !== "online") {
+            alert("ব্যবহারকারী বর্তমানে অফলাইনে আছেন!");
+            window.endCall();
+            return;
+        }
+
+        // মাইক্রোফোন পারমিশন নিয়ে WebRTC কল ইনিট করা
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        console.log('মাইক্রোফোন চালু হয়েছে। কল সিগন্যাল পাঠানো হচ্ছে...');
+
+    } catch (err) {
+        console.log('কল এরর: ' + err.message);
+        alert("কল সংযোগ করতে সমস্যা হয়েছে: " + err.message);
+        window.endCall();
+    }
 }
 
 window.endCall = function() {
-    if (currentSession) {
-        if (typeof currentSession.terminate === 'function') {
-            currentSession.terminate();
-        } else if (currentSession.getTracks) {
-            currentSession.getTracks().forEach(track => track.stop());
-        }
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
     }
-    currentSession = null;
-
-    let timeNow = new Date().toLocaleTimeString();
-    callLogs.unshift({ phone: activeCallNumber, time: timeNow });
-    updateCallHistoryUI();
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
 
     let screen = document.getElementById('dialScreen');
     if(screen) screen.value = "";
     window.showPage('dashboardPage');
     console.log('কল কেটে দেওয়া হয়েছে।');
 }
-
-function updateCallHistoryUI() {
-    let historyList = document.getElementById("callHistoryList");
-    if(historyList && callLogs.length > 0) {
-        let html = "";
-        callLogs.forEach((log) => {
-            html += `<div class="history-item">
-                <span>📞 <b>${log.phone}</b><br><small style="color:#888;">${log.time}</small></span>
-                <div>
-                    <button class="btn btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0; margin-right: 4px;" onclick="dialContact('${log.phone}')">কল</button>
-                    <button class="btn btn-verify" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0;" onclick="saveFromHistory('${log.phone}')">সেভ</button>
-                </div>
-            </div>`;
-        });
-        historyList.innerHTML = html;
-    }
-}
-
-window.saveFromHistory = function(phoneNum) {
-    let phoneElem = document.getElementById("contactPhone");
-    if(phoneElem) phoneElem.value = phoneNum;
-    window.showPage('contactsPage');
-}
-
-window.saveContact = function() {
-    let nameElem = document.getElementById("contactName");
-    let phoneElem = document.getElementById("contactPhone");
-    let photoElem = document.getElementById("contactPhoto");
-
-    let name = nameElem ? nameElem.value.trim() : "";
-    let phone = phoneElem ? phoneElem.value.trim() : "";
-    let photo = photoElem ? photoElem.value.trim() : "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-
-    if(name !== "" && phone.length >= 11) {
-        if(!photo) photo = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-        savedContacts.push({ name: name, phone: phone, photo: photo });
-        updateContactUI();
-        if(nameElem) nameElem.value = "";
-        if(phoneElem) phoneElem.value = "";
-        if(photoElem) photoElem.value = "";
-        alert("✅ কন্টাক্ট সফলভাবে সেভ হয়েছে!");
-    } else {
-        alert("দয়া করে সঠিক নাম এবং ১১ ডিজিটের নম্বর দিন!");
-    }
-}
-
-function updateContactUI() {
-    let contactListUI = document.getElementById("contactListUI");
-    if(contactListUI && savedContacts.length > 0) {
-        let html = "";
-        savedContacts.forEach((c) => {
-            html += `<div class="contact-item">
-                <div style="display: flex; align-items: center;">
-                    <img src="${c.photo}" class="contact-avatar" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'">
-                    <span><b>${c.name}</b><br>${c.phone}</span>
-                </div>
-                <button class="btn btn-primary" style="width: auto; padding: 5px 10px; font-size: 12px; margin-top: 0;" onclick="dialContact('${c.phone}')">কল করুন</button>
-            </div>`;
-        });
-        contactListUI.innerHTML = html;
-    }
-}
-
-window.dialContact = function(phoneNum) {
-    let screen = document.getElementById('dialScreen');
-    if(screen) screen.value = phoneNum;
-    window.showPage('dashboardPage');
-}
-
-window.copyNumber = function(elementId) {
-    let numElem = document.getElementById(elementId);
-    let numText = numElem ? numElem.innerText : "";
-    navigator.clipboard.writeText(numText).then(() => {
-        alert("✅ নম্বরটি কপি হয়েছে: " + numText);
-    }).catch(err => {
-        alert("কপি করতে সমস্যা হয়েছে!");
-    });
-}
-
-window.setAmount = function(amt) { 
-    let customAmt = document.getElementById('customAmount');
-    if(customAmt) customAmt.value = amt; 
-}
-
-window.processAIRecharge = async function() {
-    let customAmtElem = document.getElementById('customAmount');
-    let trxElem = document.getElementById('trxIdInput');
-    
-    let amt = parseFloat(customAmtElem ? customAmtElem.value : 0);
-    let trxId = trxElem ? trxElem.value.trim() : "";
-
-    if(amt > 0 && trxId !== "" && currentUserId) {
-        try {
-            await addDoc(collection(db, "recharge_requests"), {
-                userId: currentUserId,
-                email: currentUserEmail,
-                amount: amt,
-                trxId: trxId,
-                status: "Pending",
-                time: new Date()
-            });
-
-            alert("✅ রিচার্জ রিকোয়েস্ট সাবমিট হয়েছে!");
-            if(customAmtElem) customAmtElem.value = "";
-            if(trxElem) trxElem.value = "";
-            window.showPage('dashboardPage');
-        } catch (error) {
-            alert("রিচার্জ রিকোয়েস্ট পাঠাতে সমস্যা হয়েছে: " + error.message);
-        }
-    } else {
-        alert("দয়া করে সঠিক টাকার পরিমাণ এবং TrxID দিন!");
-    }
-}
-
-window.loadAdminRequests = async function() {
-    let requestContainer = document.getElementById("adminRequestList");
-    if (!requestContainer) return;
-
-    if (currentUserEmail !== ADMIN_EMAIL) {
-        requestContainer.innerHTML = "<p style='color: red; font-weight: bold; text-align: center; padding: 20px;'>⛔ আপনার এই পেজে প্রবেশ করার অনুমতি নেই!</p>";
-        return;
-    }
-
-    requestContainer.innerHTML = "লোড হচ্ছে...";
-
-    try {
-        const querySnapshot = await getDocs(collection(db, "recharge_requests"));
-        let html = "";
-        
-        querySnapshot.forEach((docSnap) => {
-            let req = docSnap.data();
-            let reqId = docSnap.id;
-
-            if (req.status === "Pending") {
-                html += `
-                    <div style="background: #fff; border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 8px;">
-                        <p style="margin: 0 0 5px 0;"><b>ইউজার:</b> ${req.email}</p>
-                        <p style="margin: 0 0 5px 0;"><b>টাকা:</b> ৳${req.amount}</p>
-                        <p style="margin: 0 0 8px 0;"><b>TrxID:</b> <span style="color: #e74c3c; font-weight: bold;">${req.trxId}</span></p>
-                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; width: auto; background-color: #27ae60;" onclick="approveRechargeFromAdmin('${req.userId}', ${req.amount}, '${reqId}')">
-                            ✅ টাকা যোগ করুন
-                        </button>
-                    </div>
-                `;
-            }
-        });
-
-        if (html === "") {
-            requestContainer.innerHTML = "<p style='text-align: center; color: #666;'>কোনো নতুন রিকোয়েস্ট নেই।</p>";
-        } else {
-            requestContainer.innerHTML = html;
-        }
-    } catch (error) {
-        requestContainer.innerHTML = "ডাটা লোড করতে সমস্যা হয়েছে: " + error.message;
-    }
-}
-
-window.approveRechargeFromAdmin = async function(userId, rechargeAmount, requestId) {
-    if (currentUserEmail !== ADMIN_EMAIL) {
-        alert("⛔ অনুমতি নেই!");
-        return;
-    }
-
-    try {
-        const userRef = doc(db, "users", userId);
-        const userSnap = await getDoc(userRef);
-        let currentBal = 0;
-        if (userSnap.exists()) {
-            currentBal = parseFloat(userSnap.data().balance) || 0;
-        }
-        
-        let newBalance = currentBal + parseFloat(rechargeAmount);
-
-        await setDoc(userRef, { balance: newBalance }, { merge: true });
-
-        const requestRef = doc(db, "recharge_requests", requestId);
-        await updateDoc(requestRef, { status: "Approved" });
-
-        alert("✅ সফল! টাকা যোগ হয়ে গেছে।");
-        window.loadAdminRequests();
-    } catch (error) {
-        alert("সমস্যা হয়েছে: " + error.message);
-    }
-};
