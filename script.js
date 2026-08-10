@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, onSnapshot, updateDelete, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBH3RuAfTRim8tPpNZ6tOUv2JuyrSQFQyY",
@@ -27,6 +27,7 @@ let savedContacts = [];
 
 const ADMIN_EMAIL = "eibrahimm028q@gmail.com";
 
+// পেজ পরিবর্তন করার ফাংশন
 window.showPage = function(pageId) {
     if(pageId === 'rechargePage') {
         alert("⛔ এই মুহূর্তে রিচার্জ পেজে প্রবেশের অনুমতি নেই!");
@@ -45,6 +46,7 @@ window.showPage = function(pageId) {
     }
 }
 
+// মেনু টগল করার ফাংশন
 window.toggleMenu = function(event) {
     event.stopPropagation();
     let menu = document.getElementById("settingsMenu");
@@ -65,11 +67,13 @@ window.onclick = function(event) {
     }
 }
 
+// ইউনিক ভার্চুয়াল নম্বর জেনারেটর
 async function generateUniqueVirtualNumber() {
     let randomNum = Math.floor(1000 + Math.random() * 9000).toString();
     return randomNum;
 }
 
+// নতুন অ্যাকাউন্ট রেজিস্ট্রেশন
 window.registerUser = async function() {
     let emailInput = document.getElementById("emailInput");
     let passwordInput = document.getElementById("passwordInput");
@@ -107,6 +111,7 @@ window.registerUser = async function() {
     }
 }
 
+// ইউজার লগইন
 window.loginUser = async function() {
     let emailInput = document.getElementById("emailInput");
     let passwordInput = document.getElementById("passwordInput");
@@ -128,6 +133,7 @@ window.loginUser = async function() {
     }
 }
 
+// ইউজার লগআউট
 window.logoutUser = async function() {
     if (currentUserId) {
         await setDoc(doc(db, "users", currentUserId), { status: "offline" }, { merge: true });
@@ -137,6 +143,7 @@ window.logoutUser = async function() {
     window.showPage('loginPage');
 }
 
+// অথেন্টিকেশন স্টেট পরিবর্তন ট্র্যাক করা
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUserId = user.uid;
@@ -155,12 +162,12 @@ onAuthStateChanged(auth, async (user) => {
                 let vNumElem = document.getElementById("myVirtualNumber");
                 if(vNumElem) vNumElem.innerText = currentVirtualNumber;
                 
-                let emailElem = document.getElementById("menuUserInfo"); // Fixed ID mapping
+                let emailElem = document.getElementById("menuUserEmail");
                 if(emailElem) emailElem.innerText = `ID: ${user.email}`;
                 
                 await setDoc(docRef, { status: "online" }, { merge: true });
 
-                // ইনস্ট্যান্ট ইনকামিং কল শোনার জন্য রিয়েল-টাইম লিসেনার চালু করা হলো
+                // ইনস্ট্যান্ট ইনকামিং কলের জন্য রিয়েল-টাইম লিসেনার চালু করা
                 listenForIncomingCalls(currentVirtualNumber);
             }
         } catch (e) {
@@ -177,7 +184,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// ১ সেকেন্ডের কম সময়ে কল রিসিভ করার সিগন্যালিং লিসেনার
+// রিয়েল-টাইম ইনকামিং কল সিগন্যালিং
 function listenForIncomingCalls(myNumber) {
     if (callListenerUnsubscribe) callListenerUnsubscribe();
 
@@ -192,8 +199,6 @@ function listenForIncomingCalls(myNumber) {
             if (change.type === "added") {
                 let callData = change.doc.data();
                 currentCallDocId = change.doc.id;
-                
-                // ইনকামিং কলের পপ-আপ বা স্ক্রিন দেখানো
                 showIncomingCallAlert(callData.callerNumber);
             }
         });
@@ -226,6 +231,7 @@ window.rejectIncomingCall = async function() {
     window.showPage('dashboardPage');
 }
 
+// ডায়ালপ্যাড বাটন প্রেস হ্যান্ডেলিং
 window.pressKey = function(val) { 
     let screen = document.getElementById('dialScreen');
     if(screen) screen.value += val; 
@@ -241,7 +247,7 @@ window.clearScreen = function() {
     if(screen) screen.value = "";
 }
 
-// আউটগোয়িং কল করার লজিক (তাৎক্ষণিক ফায়ারবেসে রিকোয়েস্ট পাঠানো)
+// আউটগোয়িং কল করার লজিক
 window.makeCall = async function() {
     let screen = document.getElementById('dialScreen');
     let targetNumber = screen ? screen.value.trim() : "";
@@ -264,7 +270,7 @@ window.makeCall = async function() {
     try {
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         
-        // ফায়ারবেসে রিংইং স্টেটাস পাঠানো যাতে ১ সেকেন্ডের ভেতর অপর প্রান্তের ফোনে পপআপ আসে
+        // ফায়ারবেসে দ্রুত রিংইং সিগন্যাল পাঠানো
         const callDocRef = await addDoc(collection(db, "active_calls"), {
             callerNumber: currentVirtualNumber,
             receiverNumber: targetNumber,
@@ -273,7 +279,7 @@ window.makeCall = async function() {
         });
         currentCallDocId = callDocRef.id;
 
-        // স্থায়ী কল হিস্ট্রি সেভ করা
+        // কল হিস্ট্রি সেভ করা
         if(currentUserId) {
             await addDoc(collection(db, "call_logs"), {
                 userId: currentUserId,
@@ -282,7 +288,7 @@ window.makeCall = async function() {
             });
         }
     } catch (err) {
-        alert("মাইক্রোফোন পারমিশন প্রয়োজন বা ত্রুটি: " + err.message);
+        alert("মাইক্রোফোন পার미শন প্রয়োজন বা ত্রুটি: " + err.message);
         window.endCall();
     }
 }
@@ -305,6 +311,7 @@ window.endCall = async function() {
     window.showPage('dashboardPage');
 }
 
+// কল হিস্ট্রি লোড করা
 window.loadCallHistory = async function() {
     let historyList = document.getElementById("callHistoryList");
     if(!historyList || !currentUserId) return;
