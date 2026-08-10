@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBH3RuAfTRim8tPpNZ6tOUv2JuyrSQFQyY",
@@ -19,26 +19,27 @@ const db = getFirestore(app);
 let currentUserId = null;
 let currentUserEmail = "";
 let currentVirtualNumber = "";
+let activeCallNumber = "";
 let localStream = null;
-let peerConnection = null;
-let callLogs = [];
 let savedContacts = [];
-let currentBalanceValue = 0;
 
 const ADMIN_EMAIL = "eibrahimm028q@gmail.com";
 
-// STUN সার্ভার WebRTC পিয়ার কানেকশনের জন্য
-const rtcConfig = {
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-};
-
 window.showPage = function(pageId) {
+    if(pageId === 'rechargePage') {
+        alert("⛔ এই মুহূর্তে রিচার্জ পেজে প্রবেশের অনুমতি নেই!");
+        return;
+    }
+
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     let targetPage = document.getElementById(pageId);
     if(targetPage) targetPage.classList.add('active');
 
     if(pageId === 'adminPage') {
         window.loadAdminRequests();
+    }
+    if(pageId === 'callHistoryPage') {
+        window.loadCallHistory();
     }
 }
 
@@ -62,7 +63,6 @@ window.onclick = function(event) {
     }
 }
 
-// ইউনিক ভার্চুয়াল নাম্বার তৈরি করার ফাংশন (যেমন: 1001, 1002...)
 async function generateUniqueVirtualNumber() {
     let randomNum = Math.floor(1000 + Math.random() * 9000).toString();
     return randomNum;
@@ -89,8 +89,6 @@ window.registerUser = async function() {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-
-        // ইউজারের জন্য একটি ইউনিক ভার্চুয়াল নাম্বার তৈরি করা
         let vNumber = await generateUniqueVirtualNumber();
 
         await setDoc(doc(db, "users", user.uid), {
@@ -146,13 +144,17 @@ onAuthStateChanged(auth, async (user) => {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 currentVirtualNumber = docSnap.data().virtualNumber || "----";
-                currentBalanceValue = parseFloat(docSnap.data().balance) || 0;
-                updateBalanceUI(currentBalanceValue);
+                let currentBalanceValue = parseFloat(docSnap.data().balance) || 0;
+                
+                let balElem = document.getElementById("userBalance");
+                if(balElem) balElem.innerText = "৳ " + Number(currentBalanceValue).toFixed(2);
+
+                let vNumElem = document.getElementById("myVirtualNumber");
+                if(vNumElem) vNumElem.innerText = currentVirtualNumber;
                 
                 let emailElem = document.getElementById("menuUserEmail");
-                if(emailElem) emailElem.innerText = `ID: ${user.email}\nআপনার নম্বর: ${currentVirtualNumber}`;
+                if(emailElem) emailElem.innerText = `ID: ${user.email}`;
                 
-                // অনলাইন স্ট্যাটাস আপডেট
                 await setDoc(docRef, { status: "online" }, { merge: true });
             }
         } catch (e) {
@@ -167,14 +169,6 @@ onAuthStateChanged(auth, async (user) => {
         window.showPage('loginPage');
     }
 });
-
-function updateBalanceUI(amt) {
-    let balElem = document.getElementById("userBalance");
-    let recElem = document.getElementById("rechargeBalanceDisplay");
-    let formatted = "৳ " + Number(amt).toFixed(2);
-    if(balElem) balElem.innerText = formatted;
-    if(recElem) recElem.innerText = formatted;
-}
 
 window.pressKey = function(val) { 
     let screen = document.getElementById('dialScreen');
@@ -191,7 +185,6 @@ window.clearScreen = function() {
     if(screen) screen.value = "";
 }
 
-// নিজস্ব সিস্টেমে কল করার ফাংশন (ভার্চুয়াল নাম্বার দিয়ে)
 window.makeCall = async function() {
     let screen = document.getElementById('dialScreen');
     let targetNumber = screen ? screen.value.trim() : "";
@@ -206,42 +199,23 @@ window.makeCall = async function() {
         return;
     }
 
+    activeCallNumber = targetNumber;
     let numDisplay = document.getElementById("callingNumberDisplay");
     if(numDisplay) numDisplay.innerText = targetNumber;
     window.showPage('callingPage');
 
-    console.log('কল করা হচ্ছে নম্বরটিতে: ' + targetNumber);
-
     try {
-        // ডাটাবেজ থেকে চেক করা যে এই ভার্চুয়াল নম্বরের কোনো ইউজার আছে কি না
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("virtualNumber", "==", targetNumber));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            alert("দুঃখিত, এই নম্বরের কোনো ব্যবহারকারী পাওয়া যায়নি!");
-            window.endCall();
-            return;
-        }
-
-        let receiverData = null;
-        querySnapshot.forEach((doc) => {
-            receiverData = doc.data();
-        });
-
-        if (receiverData.status !== "online") {
-            alert("ব্যবহারকারী বর্তমানে অফলাইনে আছেন!");
-            window.endCall();
-            return;
-        }
-
-        // মাইক্রোফোন পারমিশন নিয়ে WebRTC কল ইনিট করা
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        console.log('মাইক্রোফোন চালু হয়েছে। কল সিগন্যাল পাঠানো হচ্ছে...');
-
+        
+        if(currentUserId) {
+            await addDoc(collection(db, "call_logs"), {
+                userId: currentUserId,
+                targetPhone: targetNumber,
+                time: new Date()
+            });
+        }
     } catch (err) {
-        console.log('কল এরর: ' + err.message);
-        alert("কল সংযোগ করতে সমস্যা হয়েছে: " + err.message);
+        alert("মাইক্রোফোন পারমিশন প্রয়োজন বা ত্রুটি: " + err.message);
         window.endCall();
     }
 }
@@ -251,13 +225,69 @@ window.endCall = function() {
         localStream.getTracks().forEach(track => track.stop());
         localStream = null;
     }
-    if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-    }
 
     let screen = document.getElementById('dialScreen');
     if(screen) screen.value = "";
     window.showPage('dashboardPage');
-    console.log('কল কেটে দেওয়া হয়েছে।');
+}
+
+window.loadCallHistory = async function() {
+    let historyList = document.getElementById("callHistoryList");
+    if(!historyList || !currentUserId) return;
+
+    historyList.innerHTML = "<p style='text-align: center; color: #666;'>লোড হচ্ছে...</p>";
+
+    try {
+        const q = query(collection(db, "call_logs"), where("userId", "==", currentUserId));
+        const querySnapshot = await getDocs(q);
+        
+        let html = "";
+        if (querySnapshot.empty) {
+            historyList.innerHTML = "<p style='text-align: center; color: #666; font-size: 13px;'>কোনো কল রেকর্ড নেই।</p>";
+            return;
+        }
+
+        querySnapshot.forEach((doc) => {
+            let log = doc.data();
+            let timeString = log.time ? new Date(log.time.seconds * 1000).toLocaleString() : "অজানা সময়";
+            html += `<div class="history-item">
+                <span>📞 <b>${log.targetPhone}</b><br><small style="color:#888;">${timeString}</small></span>
+                <button class="btn btn-primary" style="width: auto; padding: 4px 8px; font-size: 11px; margin-top: 0;" onclick="dialContact('${log.targetPhone}')">কল</button>
+            </div>`;
+        });
+        historyList.innerHTML = html;
+    } catch (error) {
+        historyList.innerHTML = "<p style='text-align: center; color: red;'>হিস্ট্রি লোড করতে সমস্যা হয়েছে।</p>";
+    }
+}
+
+window.dialContact = function(phoneNum) {
+    let screen = document.getElementById('dialScreen');
+    if(screen) screen.value = phoneNum;
+    window.showPage('dashboardPage');
+}
+
+window.saveContact = function() {
+    let nameElem = document.getElementById("contactName");
+    let phoneElem = document.getElementById("contactPhone");
+    let name = nameElem ? nameElem.value.trim() : "";
+    let phone = phoneElem ? phoneElem.value.trim() : "";
+
+    if(name !== "" && phone.length >= 4) {
+        savedContacts.push({ name: name, phone: phone });
+        alert("✅ কন্টাক্ট সেভ হয়েছে!");
+        window.showPage('dashboardPage');
+    } else {
+        alert("সঠিক তথ্য দিন!");
+    }
+}
+
+window.loadAdminRequests = async function() {
+    let requestContainer = document.getElementById("adminRequestList");
+    if (!requestContainer) return;
+    if (currentUserEmail !== ADMIN_EMAIL) {
+        requestContainer.innerHTML = "<p style='color: red; text-align: center;'>⛔ অনুমতি নেই!</p>";
+        return;
+    }
+    requestContainer.innerHTML = "<p style='text-align: center;'>কোনো নতুন রিকোয়েস্ট নেই।</p>";
 }
