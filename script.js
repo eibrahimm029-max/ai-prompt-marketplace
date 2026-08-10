@@ -16,16 +16,20 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+let currentMobileNumber = "";
 let currentUserId = null;
-let currentUserEmail = "";
-let currentVirtualNumber = "";
-let activeCallNumber = "";
 let currentCallDocId = null;
 let localStream = null;
 let callListenerUnsubscribe = null;
 let savedContacts = [];
 
-const ADMIN_EMAIL = "eibrahimm028q@gmail.com";
+const ADMIN_EMAIL = "01800000000@rkcvoip.com"; // এডমিন নম্বর ভিত্তিক
+
+// ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর চেক করার রেগুলার এক্সপ্রেশন
+function isValidBDMobile(number) {
+    const bdRegex = /^01[3-9]\d{8}$/;
+    return bdRegex.test(number);
+}
 
 // পেজ পরিবর্তন করার ফাংশন
 window.showPage = function(pageId) {
@@ -46,7 +50,7 @@ window.showPage = function(pageId) {
     }
 }
 
-// মেনু টগল করার ফাংশন
+// মেনু টগল ফাংশন
 window.toggleMenu = function(event) {
     event.stopPropagation();
     let menu = document.getElementById("settingsMenu");
@@ -67,24 +71,18 @@ window.onclick = function(event) {
     }
 }
 
-// ইউনিক ভার্চুয়াল নম্বর জেনারেটর
-async function generateUniqueVirtualNumber() {
-    let randomNum = Math.floor(1000 + Math.random() * 9000).toString();
-    return randomNum;
-}
-
-// নতুন অ্যাকাউন্ট রেজিস্ট্রেশন
+// ১১ ডিজিটের মোবাইল নম্বর দিয়ে রেজিস্ট্রেশন
 window.registerUser = async function() {
-    let emailInput = document.getElementById("emailInput");
+    let phoneInput = document.getElementById("emailInput"); // HTML-এর emailInput আইডি ব্যবহার করা হয়েছে
     let passwordInput = document.getElementById("passwordInput");
     let errorTag = document.getElementById("authError");
     
-    let email = emailInput ? emailInput.value.trim() : "";
+    let phone = phoneInput ? phoneInput.value.trim() : "";
     let password = passwordInput ? passwordInput.value : "";
     if(errorTag) errorTag.innerText = "";
 
-    if(!email || !password) {
-        if(errorTag) errorTag.innerText = "দয়া করে জিমেইল এবং পাসওয়ার্ড দিন!";
+    if(!isValidBDMobile(phone)) {
+        if(errorTag) errorTag.innerText = "দয়া করে সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর দিন! (যেমন: 01712345678)";
         return;
     }
     if(password.length < 6) {
@@ -92,83 +90,81 @@ window.registerUser = async function() {
         return;
     }
 
+    let fakeEmail = phone + "@rkcvoip.com";
+
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, fakeEmail, password);
         const user = userCredential.user;
-        let vNumber = await generateUniqueVirtualNumber();
 
         await setDoc(doc(db, "users", user.uid), {
-            email: email,
-            virtualNumber: vNumber,
-            balance: 1.00,
+            mobile: phone,
+            balance: 10.00,
             status: "online",
             createdAt: new Date()
         });
 
-        alert(`✅ রেজিস্ট্রেশন সফল! আপনার ভার্চুয়াল নম্বর: ${vNumber}`);
+        alert(`✅ রেজিস্ট্রেশন সফল! আপনার মোবাইল নম্বর: ${phone}`);
     } catch (error) {
         if(errorTag) errorTag.innerText = "ত্রুটি: " + error.message;
     }
 }
 
-// ইউজার লগইন
+// ১১ ডিজিটের মোবাইল নম্বর দিয়ে লগইন
 window.loginUser = async function() {
-    let emailInput = document.getElementById("emailInput");
+    let phoneInput = document.getElementById("emailInput");
     let passwordInput = document.getElementById("passwordInput");
     let errorTag = document.getElementById("authError");
 
-    let email = emailInput ? emailInput.value.trim() : "";
+    let phone = phoneInput ? phoneInput.value.trim() : "";
     let password = passwordInput ? passwordInput.value : "";
     if(errorTag) errorTag.innerText = "";
 
-    if(!email || !password) {
-        if(errorTag) errorTag.innerText = "দয়া করে জিমেইল এবং পাসওয়ার্ড দিন!";
+    if(!isValidBDMobile(phone)) {
+        if(errorTag) errorTag.innerText = "দয়া করে সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন!";
         return;
     }
 
+    let fakeEmail = phone + "@rkcvoip.com";
+
     try {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(auth, fakeEmail, password);
     } catch (error) {
         if(errorTag) errorTag.innerText = "লগইন ব্যর্থ: " + error.message;
     }
 }
 
-// ইউজার লগআউট
+// লগআউট
 window.logoutUser = async function() {
-    if (currentUserId) {
-        await setDoc(doc(db, "users", currentUserId), { status: "offline" }, { merge: true });
-    }
     if (callListenerUnsubscribe) callListenerUnsubscribe();
     await signOut(auth);
     window.showPage('loginPage');
 }
 
-// অথেন্টিকেশন স্টেট পরিবর্তন ট্র্যাক করা
+// অথেন্টিকেশন স্টেট ট্র্যাক করা
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUserId = user.uid;
-        currentUserEmail = user.email || "";
+        currentMobileNumber = user.email.split('@')[0];
         
         try {
             const docRef = doc(db, "users", user.uid);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
-                currentVirtualNumber = docSnap.data().virtualNumber || "----";
                 let currentBalanceValue = parseFloat(docSnap.data().balance) || 0;
                 
                 let balElem = document.getElementById("userBalance");
                 if(balElem) balElem.innerText = "৳ " + Number(currentBalanceValue).toFixed(2);
 
                 let vNumElem = document.getElementById("myVirtualNumber");
-                if(vNumElem) vNumElem.innerText = currentVirtualNumber;
+                if(vNumElem) vNumElem.innerText = currentMobileNumber;
                 
                 let emailElem = document.getElementById("menuUserEmail");
-                if(emailElem) emailElem.innerText = `ID: ${user.email}`;
+                if(emailElem) emailElem.innerText = `নম্বর: ${currentMobileNumber}`;
                 
                 await setDoc(docRef, { status: "online" }, { merge: true });
 
-                // ইনস্ট্যান্ট ইনকামিং কলের জন্য রিয়েল-টাইম লিসেনার চালু করা
-                listenForIncomingCalls(currentVirtualNumber);
+                // ইনস্ট্যান্ট কল শোনার জন্য রিয়েল-টাইম লিসেনার চালু করা
+                listenForIncomingCalls(currentMobileNumber);
             }
         } catch (e) {
             console.log("User data fetch error:", e);
@@ -178,13 +174,12 @@ onAuthStateChanged(auth, async (user) => {
     } else {
         if (callListenerUnsubscribe) callListenerUnsubscribe();
         currentUserId = null;
-        currentUserEmail = "";
-        currentVirtualNumber = "";
+        currentMobileNumber = "";
         window.showPage('loginPage');
     }
 });
 
-// রিয়েল-টাইম ইনকামিং কল সিগন্যালিং
+// ১ সেকেন্ডের মধ্যে ইনস্ট্যান্ট ইনকামিং কল সিগন্যালিং
 function listenForIncomingCalls(myNumber) {
     if (callListenerUnsubscribe) callListenerUnsubscribe();
 
@@ -231,7 +226,7 @@ window.rejectIncomingCall = async function() {
     window.showPage('dashboardPage');
 }
 
-// ডায়ালপ্যাড বাটন প্রেস হ্যান্ডেলিং
+// ডায়ালপ্যাড কন্ট্রোল
 window.pressKey = function(val) { 
     let screen = document.getElementById('dialScreen');
     if(screen) screen.value += val; 
@@ -247,22 +242,21 @@ window.clearScreen = function() {
     if(screen) screen.value = "";
 }
 
-// আউটগোয়িং কল করার লজিক
+// সরাসরি ১১ ডিজিটের নম্বরে কল করার লজিক
 window.makeCall = async function() {
     let screen = document.getElementById('dialScreen');
     let targetNumber = screen ? screen.value.trim() : "";
     
-    if(targetNumber === "") {
-        alert("দয়া করে একটি ভার্চুয়াল নম্বর ডায়াল করুন!");
+    if(!isValidBDMobile(targetNumber)) {
+        alert("দয়া করে সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর ডায়াল করুন! (যেমন: 01712345678)");
         return;
     }
 
-    if(targetNumber === currentVirtualNumber) {
+    if(targetNumber === currentMobileNumber) {
         alert("আপনি নিজের নম্বরে কল করতে পারবেন না!");
         return;
     }
 
-    activeCallNumber = targetNumber;
     let numDisplay = document.getElementById("callingNumberDisplay");
     if(numDisplay) numDisplay.innerText = targetNumber;
     window.showPage('callingPage');
@@ -272,7 +266,7 @@ window.makeCall = async function() {
         
         // ফায়ারবেসে দ্রুত রিংইং সিগন্যাল পাঠানো
         const callDocRef = await addDoc(collection(db, "active_calls"), {
-            callerNumber: currentVirtualNumber,
+            callerNumber: currentMobileNumber,
             receiverNumber: targetNumber,
             status: "ringing",
             time: new Date()
@@ -288,7 +282,7 @@ window.makeCall = async function() {
             });
         }
     } catch (err) {
-        alert("মাইক্রোফোন পার미শন প্রয়োজন বা ত্রুটি: " + err.message);
+        alert("মাইক্রোফোন পারমিশন প্রয়োজন বা ত্রুটি: " + err.message);
         window.endCall();
     }
 }
@@ -354,21 +348,18 @@ window.saveContact = function() {
     let name = nameElem ? nameElem.value.trim() : "";
     let phone = phoneElem ? phoneElem.value.trim() : "";
 
-    if(name !== "" && phone.length >= 4) {
+    if(name !== "" && isValidBDMobile(phone)) {
         savedContacts.push({ name: name, phone: phone });
         alert("✅ কন্টাক্ট সেভ হয়েছে!");
         window.showPage('dashboardPage');
     } else {
-        alert("সঠিক তথ্য দিন!");
+        alert("সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন!");
     }
 }
 
 window.loadAdminRequests = async function() {
     let requestContainer = document.getElementById("adminRequestList");
     if (!requestContainer) return;
-    if (currentUserEmail !== ADMIN_EMAIL) {
-        requestContainer.innerHTML = "<p style='color: red; text-align: center;'>⛔ অনুমতি নেই!</p>";
-        return;
-    }
     requestContainer.innerHTML = "<p style='text-align: center;'>কোনো নতুন রিকোয়েস্ট নেই।</p>";
-}
+                }
+        
