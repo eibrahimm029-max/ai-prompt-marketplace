@@ -25,41 +25,28 @@ let localStream = null;
 let callListenerUnsubscribe = null;
 let savedContacts = [];
 
-const ADMIN_EMAIL = "01800000000@rkcvoip.com"; 
 const VAPID_KEY = "BLVaDwyGoiw9O2j1zLJm-egx5rg32xabUFZxFekpOSRm3aj2PdePjHGVWdV9Bq7_r2gAwnWQc6I5KeKKV52L9a0";
 
-// ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর চেক করার রেগুলার এক্সপ্রেশন
 function isValidBDMobile(number) {
     const bdRegex = /^01[3-9]\d{8}$/;
     return bdRegex.test(number);
 }
 
-// পুশ নোটিফিকেশন পারমিশন এবং টোকেন নেওয়ার ফাংশন
 async function requestNotificationPermission(userId) {
     try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             const token = await getToken(messaging, { vapidKey: VAPID_KEY });
             if (token && userId) {
-                // ফায়ারস্টোরে ইউজারের ডকুমেন্টে FCM টোকেন সেভ করে রাখা
                 await setDoc(doc(db, "users", userId), { fcmToken: token }, { merge: true });
-                console.log("FCM Token saved successfully.");
             }
-        } else {
-            console.log("Notification permission denied.");
         }
     } catch (error) {
         console.error("Error getting notification token:", error);
     }
 }
 
-// পেজ পরিবর্তন করার ফাংশন
 window.showPage = function(pageId) {
-    if(pageId === 'rechargePage') {
-        alert("⛔ এই মুহূর্তে রিচার্জ পেজে প্রবেশের অনুমতি নেই!");
-        return;
-    }
-
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     let targetPage = document.getElementById(pageId);
     if(targetPage) targetPage.classList.add('active');
@@ -72,7 +59,6 @@ window.showPage = function(pageId) {
     }
 }
 
-// মেনু টগল ফাংশন
 window.toggleMenu = function(event) {
     event.stopPropagation();
     let menu = document.getElementById("settingsMenu");
@@ -93,7 +79,6 @@ window.onclick = function(event) {
     }
 }
 
-// ১১ ডিজিটের মোবাইল নম্বর দিয়ে রেজিস্ট্রেশন
 window.registerUser = async function() {
     let phoneInput = document.getElementById("emailInput"); 
     let passwordInput = document.getElementById("passwordInput");
@@ -104,7 +89,7 @@ window.registerUser = async function() {
     if(errorTag) errorTag.innerText = "";
 
     if(!isValidBDMobile(phone)) {
-        if(errorTag) errorTag.innerText = "দয়া করে সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর দিন! (যেমন: 01712345678)";
+        if(errorTag) errorTag.innerText = "দয়া করে সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর দিন!";
         return;
     }
     if(password.length < 6) {
@@ -120,7 +105,6 @@ window.registerUser = async function() {
 
         await setDoc(doc(db, "users", user.uid), {
             mobile: phone,
-            balance: 10.00,
             status: "online",
             createdAt: new Date()
         });
@@ -131,7 +115,6 @@ window.registerUser = async function() {
     }
 }
 
-// ১১ ডিজিটের মোবাইল নম্বর দিয়ে লগইন
 window.loginUser = async function() {
     let phoneInput = document.getElementById("emailInput");
     let passwordInput = document.getElementById("passwordInput");
@@ -155,14 +138,17 @@ window.loginUser = async function() {
     }
 }
 
-// লগআউট
 window.logoutUser = async function() {
+    if (currentUserId) {
+        try {
+            await setDoc(doc(db, "users", currentUserId), { status: "offline" }, { merge: true });
+        } catch(e) {}
+    }
     if (callListenerUnsubscribe) callListenerUnsubscribe();
     await signOut(auth);
     window.showPage('loginPage');
 }
 
-// অথেন্টিকেশন স্টেট ট্র্যাক করা
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUserId = user.uid;
@@ -172,11 +158,6 @@ onAuthStateChanged(auth, async (user) => {
             const docRef = doc(db, "users", user.uid);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
-                let currentBalanceValue = parseFloat(docSnap.data().balance) || 0;
-                
-                let balElem = document.getElementById("userBalance");
-                if(balElem) balElem.innerText = "৳ " + Number(currentBalanceValue).toFixed(2);
-
                 let vNumElem = document.getElementById("myVirtualNumber");
                 if(vNumElem) vNumElem.innerText = currentMobileNumber;
                 
@@ -184,11 +165,7 @@ onAuthStateChanged(auth, async (user) => {
                 if(emailElem) emailElem.innerText = `নম্বর: ${currentMobileNumber}`;
                 
                 await setDoc(docRef, { status: "online" }, { merge: true });
-
-                // নোটিফিকেশন পারমিশন এবং টোকেন রিকোয়েস্ট করা
                 await requestNotificationPermission(user.uid);
-
-                // ইনস্ট্যান্ট কল শোনার জন্য রিয়েল-টাইম লিসেনার চালু করা
                 listenForIncomingCalls(currentMobileNumber);
             }
         } catch (e) {
@@ -204,7 +181,6 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// ১ সেকেন্ডের মধ্যে ইনস্ট্যান্ট ইনকামিং কল সিগন্যালিং
 function listenForIncomingCalls(myNumber) {
     if (callListenerUnsubscribe) callListenerUnsubscribe();
 
@@ -251,7 +227,6 @@ window.rejectIncomingCall = async function() {
     window.showPage('dashboardPage');
 }
 
-// ডায়ালপ্যাড কন্ট্রোল
 window.pressKey = function(val) { 
     let screen = document.getElementById('dialScreen');
     if(screen) screen.value += val; 
@@ -267,13 +242,13 @@ window.clearScreen = function() {
     if(screen) screen.value = "";
 }
 
-// সরাসরি ১১ ডিজিটের নম্বরে কল করার লজিক
+// কল করার সময় ইউজার অনলাইন/অফলাইন চেক করার সিস্টেম
 window.makeCall = async function() {
     let screen = document.getElementById('dialScreen');
     let targetNumber = screen ? screen.value.trim() : "";
     
     if(!isValidBDMobile(targetNumber)) {
-        alert("দয়া করে সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর ডায়াল করুন! যেমন: 01712345678");
+        alert("দয়া করে সঠিক ১১ ডিজিটের বাংলাদেশি মোবাইল নম্বর ডায়াল করুন!");
         return;
     }
 
@@ -282,14 +257,35 @@ window.makeCall = async function() {
         return;
     }
 
-    let numDisplay = document.getElementById("callingNumberDisplay");
-    if(numDisplay) numDisplay.innerText = targetNumber;
-    window.showPage('callingPage');
-
     try {
+        // ১. চেক করা যাকে কল দেওয়া হচ্ছে সে ডাটাবেজে আছে কি না এবং তার স্ট্যাটাস কী
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("mobile", "==", targetNumber));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            alert("এই নম্বরে কোনো রেজিস্টার্ড ইউজার পাওয়া যায়নি!");
+            return;
+        }
+
+        let targetUserData = null;
+        querySnapshot.forEach((doc) => {
+            targetUserData = doc.data();
+        });
+
+        // ২. ইউজার অফলাইন থাকলে কল যাবে না
+        if (!targetUserData || targetUserData.status !== "online") {
+            alert("❌ ইউজার বর্তমানে লাইনে বা ইন্টারনেটে নেই (Offline)!");
+            return;
+        }
+
+        // ৩. অনলাইন থাকলে কলিং পেজে নিয়ে যাওয়া এবং রিং করা
+        let numDisplay = document.getElementById("callingNumberDisplay");
+        if(numDisplay) numDisplay.innerText = targetNumber;
+        window.showPage('callingPage');
+
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         
-        // ফায়ারবেসে দ্রুত রিংইং সিগন্যাল পাঠানো
         const callDocRef = await addDoc(collection(db, "active_calls"), {
             callerNumber: currentMobileNumber,
             receiverNumber: targetNumber,
@@ -298,7 +294,6 @@ window.makeCall = async function() {
         });
         currentCallDocId = callDocRef.id;
 
-        // কল হিস্ট্রি সেভ করা
         if(currentUserId) {
             await addDoc(collection(db, "call_logs"), {
                 userId: currentUserId,
@@ -330,7 +325,6 @@ window.endCall = async function() {
     window.showPage('dashboardPage');
 }
 
-// কল হিস্ট্রি লোড করা
 window.loadCallHistory = async function() {
     let historyList = document.getElementById("callHistoryList");
     if(!historyList || !currentUserId) return;
@@ -386,5 +380,4 @@ window.loadAdminRequests = async function() {
     let requestContainer = document.getElementById("adminRequestList");
     if (!requestContainer) return;
     requestContainer.innerHTML = "<p style='text-align: center;'>কোনো নতুন রিকোয়েস্ট নেই।</p>";
-    }
-    
+}
