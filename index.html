@@ -23,13 +23,12 @@
     <div id="loginPage" class="page active">
         <div class="logo-area">
             <h2>স্বাগতম!</h2>
-            <p>জিমেইল দিয়ে লগইন বা রেজিস্ট্রেশন করুন</p>
+            <p>আপনার ফোন নম্বর এবং পাসওয়ার্ড দিয়ে লগইন বা রেজিস্ট্রেশন করুন</p>
         </div>
-        <div class="bonus-badge">🎁 নতুন অ্যাকাউন্টে ১.০০ টাকা ফ্রি ব্যালেন্স!</div>
 
         <div class="input-group">
-            <label>আপনার জিমেইল</label>
-            <input type="email" id="emailInput" class="input-box" placeholder="user@gmail.com">
+            <label>মোবাইল নম্বর</label>
+            <input type="text" id="emailInput" class="input-box" placeholder="01712345678">
         </div>
         <div class="input-group">
             <label>পাসওয়ার্ড (কমপক্ষে ৬ অক্ষরের)</label>
@@ -44,8 +43,7 @@
     <div id="dashboardPage" class="page">
         <div class="header">
             <div class="balance-container" style="cursor: default;" title="আপনার ভার্চুয়াল নম্বর">
-                <div class="balance-box" style="margin-bottom: 3px;">ব্যালেন্স: <span id="userBalance">৳ 0.00</span></div>
-                <div style="font-size: 11px; color: #2980b9; font-weight: bold; text-align: center;">নম্বর: <span id="myVirtualNumber">----</span></div>
+                <div style="font-size: 13px; color: #2980b9; font-weight: bold; text-align: left;">নম্বর: <span id="myVirtualNumber">----</span></div>
             </div>
             <div class="menu-icon" onclick="toggleMenu(event)">☰</div>
         </div>
@@ -87,9 +85,8 @@
     <!-- পেজ ৩: কলিং স্ক্রিন -->
     <div id="callingPage" class="page">
         <div class="calling-screen">
-            <h3>📞 <span>RKC</span> VoIP</h3>
-            <p>কল হচ্ছে...</p>
-            <h2 id="callingNumberDisplay" style="color: #27ae60; margin: 15px 0;">01795624217</h2>
+            <p style="font-size: 20px; color: #27ae60; font-weight: bold; margin-bottom: 10px;">কল হচ্ছে...</p>
+            <h2 id="callingNumberDisplay" style="color: #2c3e50; margin: 15px 0;">01795624217</h2>
             <div style="font-size: 30px; margin: 15px 0;">⏳</div>
             <button class="btn btn-danger" onclick="endCall()">কল কাটুন ❌</button>
         </div>
@@ -117,16 +114,7 @@
         <button class="btn btn-primary" onclick="showPage('dashboardPage')">ফিরে যান</button>
     </div>
 
-    <!-- পেজ ৬: রিচার্জ পেজ (ব্লকড) -->
-    <div id="rechargePage" class="page">
-        <div class="recharge-header">
-            <h2>💳 ব্যালেন্স রিচার্জ</h2>
-        </div>
-        <p style="text-align: center; color: #e74c3c; margin-top: 50px; font-weight: bold;">⛔ এই মুহূর্তে রিচার্জ সিস্টেম বন্ধ রয়েছে।</p>
-        <button class="btn btn-secondary" onclick="showPage('dashboardPage')" style="margin-top: 30px;">ফিরে যান</button>
-    </div>
-
-    <!-- পেজ ৭: এডমিন প্যানেল পেজ -->
+    <!-- পেজ ৬: এডমিন প্যানেল পেজ -->
     <div id="adminPage" class="page">
         <h2>🛡️ এডমিন প্যানেল</h2>
         <div class="history-box" id="adminRequestList" style="max-height: 280px;">
